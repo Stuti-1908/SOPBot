@@ -40,21 +40,33 @@ MOCK_SUMMARY = {"executive_summary": "Significant improvements are achievable."}
 
 
 def _mock_call(prompt: str, max_tokens: int = 4096) -> dict:
-    """Route to the right mock response based on prompt content."""
-    if "optimised_steps" in prompt:
-        return MOCK_REDESIGN
-    elif "opportunity_id" in prompt:
-        return MOCK_AUTOMATION
-    elif "dot_source" in prompt:
-        return MOCK_FLOWCHART
-    elif "executive_summary" in prompt:
-        return MOCK_SUMMARY
-    elif "shared_bottlenecks" in prompt:
+    """Route to the right mock response based on prompt content.
+
+    Order matters here: later prompts embed earlier tasks' JSON output
+    (e.g. TASK2_AUTOMATION includes {redesign_json}, so its prompt text
+    also contains "optimised_steps"). Check the most specific/exclusive
+    markers first so a prompt that echoes a prior task's output doesn't
+    get misrouted to that prior task's mock response.
+    """
+    if "shared_bottlenecks" in prompt:
         return {
             "insights": "Cross-process insight text.",
             "shared_bottlenecks": ["Manual data entry"],
             "cross_automation_opportunities": ["Unified OCR platform"],
         }
+    elif "executive_summary" in prompt:
+        # TASK4_SUMMARY embeds both redesign_json (optimised_steps) and
+        # automation_json (opportunity_id), so it must be checked before
+        # either of those markers.
+        return MOCK_SUMMARY
+    elif "dot_source" in prompt:
+        return MOCK_FLOWCHART
+    elif "opportunity_id" in prompt:
+        # TASK2_AUTOMATION embeds redesign_json (optimised_steps) too,
+        # so this must be checked before "optimised_steps".
+        return MOCK_AUTOMATION
+    elif "optimised_steps" in prompt:
+        return MOCK_REDESIGN
     return {}
 
 

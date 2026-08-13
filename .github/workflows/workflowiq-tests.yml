@@ -1,0 +1,36 @@
+name: WorkflowIQ tests
+
+on:
+  push:
+    paths:
+      - "workflowiq/**"
+      - ".github/workflows/workflowiq-tests.yml"
+  pull_request:
+    paths:
+      - "workflowiq/**"
+      - ".github/workflows/workflowiq-tests.yml"
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: workflowiq
+    env:
+      # Dummy value only - engine.py constructs an Anthropic client at import
+      # time, but the test suite mocks every call to it (see
+      # tests/test_engine_mocked.py), so no real key or network call happens.
+      ANTHROPIC_API_KEY: dummy-key-for-ci-import-only
+      PYTHONPATH: ${{ github.workspace }}/workflowiq
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run tests
+        run: python -m pytest tests/
