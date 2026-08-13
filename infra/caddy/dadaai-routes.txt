@@ -1,0 +1,14 @@
+# ------------------------------------------------------------------
+# DadaAI routes — APPEND to the existing /root/n8n/Caddyfile.
+# Do NOT replace the file or touch the existing 167.233.94.171.nip.io block.
+# The shared Caddy container reaches these by container name because
+# dadaai-n8n and dadaai-workflowiq join the same `n8n_default` network.
+# ------------------------------------------------------------------
+
+dada-n8n.167.233.94.171.nip.io {
+    reverse_proxy dadaai-n8n:5678
+}
+
+dada-wiq.167.233.94.171.nip.io {
+    reverse_proxy dadaai-workflowiq:8501
+}

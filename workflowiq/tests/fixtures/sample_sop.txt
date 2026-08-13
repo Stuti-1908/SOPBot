@@ -1,0 +1,32 @@
+Invoice Processing SOP — Accounts Payable
+
+Purpose:
+This document describes the end-to-end process for receiving, reviewing, approving, and paying vendor invoices at Acme Corp.
+
+Step 1: Invoice Receipt
+The AP clerk checks the shared invoices@acme.com inbox every morning at 9am. All PDF invoices are downloaded and saved to the shared drive folder: Finance > Invoices > [Year] > [Month].
+
+Step 2: Data Entry
+The clerk manually enters invoice details (vendor name, invoice number, date, line items, total amount) into the ERP system (QuickBooks). This typically takes 5–10 minutes per invoice. On average, 20–40 invoices are processed daily.
+
+Step 3: Three-Way Match
+The clerk compares the invoice against the corresponding Purchase Order (PO) and goods receipt. If all three match, the invoice proceeds to approval. If there is a discrepancy, the clerk emails the purchasing team to resolve.
+
+Step 4: Manager Approval
+Invoices under $5,000 are approved by the AP Supervisor. Invoices $5,000–$25,000 require CFO approval. Invoices over $25,000 require CEO approval. Approvals are obtained via email chain.
+
+Step 5: Payment Scheduling
+Once approved, the clerk schedules payment in QuickBooks based on the invoice due date (net-30 terms are standard). Payments are batched weekly on Fridays.
+
+Step 6: Payment Execution
+The CFO reviews and authorises the weekly payment batch in the bank portal. Wire transfers and ACH payments are executed.
+
+Step 7: Reconciliation
+The AP clerk reconciles payments in QuickBooks and files the paid invoice in the archive folder. Monthly reconciliation reports are sent to the CFO.
+
+Known Pain Points:
+- Manual data entry causes frequent typos requiring corrections
+- Email-based approvals are slow and hard to track
+- No automated reminders for overdue approvals
+- Reconciliation takes 2–3 hours at month-end
+- No visibility into outstanding liabilities until month-end close

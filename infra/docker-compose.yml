@@ -1,0 +1,99 @@
+version: "3.9"
+
+# ------------------------------------------------------------------
+# DadaAI stack — co-hosted on the shared "relentless-n8n" Hetzner box.
+# Does NOT run its own Caddy/reverse-proxy or bind ports 80/443 —
+# the existing n8n-caddy-1 container (in /root/n8n) already owns those.
+# This compose only creates internal services and joins the existing
+# `n8n_default` network so the shared Caddy can reach them.
+# Routes are added to /root/n8n/Caddyfile separately — see infra/caddy/dadaai-routes.txt
+# ------------------------------------------------------------------
+
+services:
+  dadaai-n8n:
+    image: n8nio/n8n:latest
+    container_name: dadaai-n8n
+    restart: unless-stopped
+    environment:
+      - N8N_HOST=${N8N_HOST}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://${N8N_HOST}/
+      - N8N_EDITOR_BASE_URL=https://${N8N_HOST}/
+      - N8N_PROXY_HOPS=1
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=dadaai-postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB}
+      - DB_POSTGRESDB_USER=${POSTGRES_USER}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+      - GENERIC_TIMEZONE=Asia/Kolkata
+      - TZ=Asia/Kolkata
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=336
+      - N8N_METRICS=true
+      - N8N_LOG_LEVEL=info
+      - N8N_LOG_OUTPUT=console
+      - N8N_RUNNERS_ENABLED=true
+    expose:
+      - "5678"
+    volumes:
+      - dadaai_n8n_data:/home/node/.n8n
+    depends_on:
+      dadaai-postgres:
+        condition: service_healthy
+    networks:
+      - n8n_default
+
+  dadaai-workflowiq:
+    build:
+      context: ../workflowiq
+      dockerfile: Dockerfile
+    container_name: dadaai-workflowiq
+    restart: unless-stopped
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-claude-sonnet-4-6}
+      - GOOGLE_SERVICE_ACCOUNT_JSON=/run/secrets/gcp_sa.json
+      - OUTPUT_DIR=/app/output
+      - MAX_SOP_WORDS=${MAX_SOP_WORDS:-15000}
+      - MIN_SOP_WORDS=${MIN_SOP_WORDS:-100}
+      - MAX_SOPS_PER_RUN=${MAX_SOPS_PER_RUN:-8}
+      - AIRTABLE_API_TOKEN=${AIRTABLE_API_TOKEN}
+      - AIRTABLE_BASE_ID=${AIRTABLE_BASE_ID}
+      - STREAMLIT_APP_PASSWORD=${STREAMLIT_APP_PASSWORD}
+    expose:
+      - "8501"
+    volumes:
+      - dadaai_workflowiq_output:/app/output
+      - ${GCP_SA_HOST_PATH}:/run/secrets/gcp_sa.json:ro
+    networks:
+      - n8n_default
+
+  dadaai-postgres:
+    image: postgres:16-alpine
+    container_name: dadaai-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - dadaai_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - n8n_default
+
+volumes:
+  dadaai_n8n_data:
+  dadaai_postgres_data:
+  dadaai_workflowiq_output:
+
+networks:
+  n8n_default:
+    external: true

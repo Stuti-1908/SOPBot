@@ -1,0 +1,23 @@
+# Secrets — never commit live credentials
+secrets/
+infra/.env
+**/.env
+!**/.env.example
+
+# Generated output
+workflowiq/output/
+*.pdf
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.omc/
+.qodo/
+.claude/
