@@ -22,6 +22,7 @@ Neither `infra/.env` nor `secrets/gcp_sa.json` are committed to git (see `.gitig
 | `VAPI_WEBHOOK_SECRET` | `infra/.env` | Validates that inbound webhook calls to n8n's `/sopbot-call-ended` endpoint really came from Vapi | Vapi dashboard → the phone number's webhook config |
 | `N8N_ENCRYPTION_KEY` | `infra/.env` | Encrypts every credential n8n itself stores internally | **Cannot be rotated in place** - see warning below |
 | `secrets/gcp_sa.json` (whole file) | `secrets/` directory | WorkflowIQ (`google_drive/reader.py`), potential future backup scripts | GCP Console → IAM & Admin → Service Accounts → `sopbot-service-account@sopbot-501317.iam.gserviceaccount.com` → Keys → Add key (then delete the old one) |
+| `B2_KEY_ID` / `B2_APPLICATION_KEY` | `infra/.env` | `infra/scripts/dadaai_backup.sh` (offsite backup upload via rclone) | Backblaze account → App Keys → delete the old key, create a new one scoped to the `sopbot-backups-dadaai` bucket only, update `.env` and `/root/.config/rclone/rclone.conf` on the server |
 
 ---
 

@@ -28,9 +28,14 @@ Confirm which situation you're in before starting. This runbook assumes (b): a c
 
 ## What IS covered by nightly backup
 
-`/root/n8n_backup.sh` runs nightly at 03:00 via cron on the server and produces a WAL-safe, integrity-checked snapshot of n8n's SQLite database (workflow definitions, execution history, credential references) at `/root/n8n_backups/n8n_<timestamp>.sqlite.gz`, retained 7 days.
+Two separate n8n instances run on this box (see "this stack is co-hosted" above), each with its own backup job:
 
-**As of 2026-08, this backup is local to the same server it protects.** If the server itself is lost (not just the database), these backup files are lost with it. Offsite replication is a known gap - in progress, see project notes. Until it's closed, treat this runbook's RPO as best-effort only for whole-server loss scenarios; it's reliable for "n8n database got corrupted but the server is fine."
+- `/root/n8n_backup.sh` (03:00 daily) backs up **`n8n-n8n-1`** - a different, unrelated n8n instance on this shared server (Relentless AI and other projects, not SOPBot). WAL-safe SQLite snapshot via `VACUUM INTO`, saved to `/root/n8n_backups/n8n_<timestamp>.sqlite.gz`, retained 7 days.
+- `/root/dadaai_backup.sh` (03:05 daily) backs up **`dadaai-n8n`** - SOPBot's actual n8n instance, which runs on Postgres (`dadaai-postgres`), not SQLite. Produces a `pg_dump` at `/root/dadaai_backups/dadaai_postgres_<timestamp>.sql.gz`, retained 7 days.
+
+**Until 2026-08-14, `dadaai-n8n`'s own database was never backed up at all** - only the exported workflow JSON in `sopbot/n8n-workflows/` existed outside the live container (which itself was only added 2026-08-13). The two scripts were easy to conflate since they look similar and run minutes apart; confirm which one you actually need when restoring (check the `CONTAINER=` line at the top of each script if unsure).
+
+**Offsite:** `/root/dadaai_backup.sh` also uploads its own output and the latest `n8n-n8n-1` SQLite backup to a Backblaze B2 bucket (`sopbot-backups-dadaai`, credentials in `infra/.env` as `B2_*`) via `rclone`, so both backups now survive a total loss of this server, not just database corruption. `n8n_backup.sh` itself does not upload anything - the offsite step piggybacks on the second script running after it.
 
 ## What is NOT covered by any automated backup
 
@@ -78,13 +83,16 @@ docker compose up -d
 docker ps
 ```
 
-### 6. Restore the n8n backup (if recovering from a corrupted DB, not a full server loss)
+### 6. Restore dadaai-n8n's database (Postgres)
+Download the latest `dadaai_postgres_<timestamp>.sql.gz` from the B2 bucket (`sopbot-backups-dadaai`) or wherever else it was retrieved from, then:
 ```bash
-gunzip -k /path/to/n8n_<timestamp>.sqlite.gz
-docker cp n8n_<timestamp>.sqlite dadaai-n8n:/home/node/.n8n/database.sqlite
+gunzip -k dadaai_postgres_<timestamp>.sql.gz
+docker exec -i dadaai-postgres psql -U dadaai_user -d dadaai_n8n < dadaai_postgres_<timestamp>.sql
 docker restart dadaai-n8n
 ```
 If no backup file survived (full server + backup loss), skip to step 7 and rebuild from the exported JSON instead - you will lose execution history but not workflow logic.
+
+(The `n8n_<timestamp>.sqlite.gz` backups relate to a *different* n8n instance on the original server - not needed to restore SOPBot. See "What IS covered" above.)
 
 ### 7. Re-import workflows (always do this even after restoring a DB backup, to confirm workflows are present and active)
 - n8n UI → Import → `sopbot/n8n-workflows/sopbot_main.json`
@@ -109,8 +117,8 @@ crontab -e
 
 ---
 
-## Known gaps in this runbook (as of 2026-08-13)
+## Known gaps in this runbook (as of 2026-08-14)
 
-- Offsite backup destination not yet finalized - nightly backups are server-local only.
 - `infra/scripts/harden.sh` has not been re-verified against a current Ubuntu image.
 - This runbook has not been dry-run on an actual fresh VPS - treat as best-effort until tested.
+- The B2 offsite upload has only been verified as a manual one-off run and via the real cron entry existing - not yet confirmed to succeed unattended over multiple nights. Check `/root/dadaai_backups/backup.log` after a few days to confirm.
