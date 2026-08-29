@@ -71,6 +71,17 @@ services:
     networks:
       - n8n_default
 
+  dadaai-marketing:
+    build:
+      context: ../marketing
+      dockerfile: Dockerfile
+    container_name: dadaai-marketing
+    restart: unless-stopped
+    expose:
+      - "80"
+    networks:
+      - n8n_default
+
   dadaai-postgres:
     image: postgres:16-alpine
     container_name: dadaai-postgres
