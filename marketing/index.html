@@ -125,16 +125,25 @@
   }
   @media (max-width: 720px) { .nav-links { display: none; } }
 
-  /* ---------- Hero ---------- */
-  .hero {
+  /* ---------- Hero ----------
+     header.hero and the inner .wrap.hero-grid are two different
+     elements - keep their rules on separate class names. They used to
+     both be "hero", which silently collided: the header's padding/grid
+     rules also landed on the inner .wrap div, cancelling its centering
+     and left padding (the bug that made the hero text run to the edge
+     of the viewport). */
+  header.hero {
     padding: 96px 0 88px;
+  }
+  .hero-grid {
     display: grid;
     grid-template-columns: 1.05fr 0.95fr;
     gap: 64px;
     align-items: center;
   }
   @media (max-width: 900px) {
-    .hero { grid-template-columns: 1fr; padding: 56px 0 64px; gap: 48px; }
+    header.hero { padding: 56px 0 64px; }
+    .hero-grid { grid-template-columns: 1fr; gap: 48px; }
   }
 
   .eyebrow {
@@ -752,7 +761,7 @@
 </nav>
 
 <header class="hero">
-  <div class="wrap hero">
+  <div class="wrap hero-grid">
     <div>
       <div class="eyebrow">Now taking calls</div>
       <h1>Turn your team's <em>tribal knowledge</em> into documented SOPs.</h1>
