@@ -82,6 +82,23 @@ services:
     networks:
       - n8n_default
 
+  dadaai-dashboard:
+    build:
+      context: ../dashboard
+      dockerfile: Dockerfile
+    container_name: dadaai-dashboard
+    restart: unless-stopped
+    environment:
+      - DASHBOARD_DATA_SOURCE=${DASHBOARD_DATA_SOURCE:-mock}
+      - AIRTABLE_API_TOKEN=${AIRTABLE_API_TOKEN}
+      - AIRTABLE_BASE_ID=${AIRTABLE_BASE_ID}
+      - SOPBOT_CALL_NUMBER=${SOPBOT_CALL_NUMBER:-+1 903-626-7053}
+      - WORKFLOWIQ_URL=${WORKFLOWIQ_URL:-}
+    expose:
+      - "8501"
+    networks:
+      - n8n_default
+
   dadaai-postgres:
     image: postgres:16-alpine
     container_name: dadaai-postgres

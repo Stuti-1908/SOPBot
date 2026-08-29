@@ -16,6 +16,10 @@ dada-wiq.167.233.94.171.nip.io {
 dada-marketing.167.233.94.171.nip.io {
     reverse_proxy dadaai-marketing:80
 }
+
+dada-dashboard.167.233.94.171.nip.io {
+    reverse_proxy dadaai-dashboard:8501
+}
 # Once DNS for the real domain (workflowiq.pro / sopbot equivalent) is
 # pointed at this server, add a matching block here for that domain too
 # (Caddy will auto-provision TLS for it the same way it does for the
