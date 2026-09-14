@@ -8,6 +8,7 @@ Return a JSON object matching EXACTLY this schema:
   "process_name": "string — concise name for this process",
   "department": "string — department or team name",
   "process_owner": "string — role of the person interviewed",
+  "employee_email": "string — email address they gave to receive a copy of this SOP, or null if not captured",
   "frequency": "string — how often this process runs (e.g. Daily, Weekly, Per Request)",
   "estimated_duration_minutes": integer | null,
   "steps": [
