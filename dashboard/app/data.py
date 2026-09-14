@@ -1,9 +1,9 @@
-"""Data access for the owner dashboard: real Airtable reads, with a mock
-provider so the dashboard is testable while Airtable's API is unavailable
-(PUBLIC_API_BILLING_LIMIT_EXCEEDED as of 2026-08 - see project notes).
+"""Data access for the owner dashboard: real Supabase reads, with a mock
+provider so the dashboard is testable without a live database.
 
 Set DASHBOARD_DATA_SOURCE=mock (default) to use realistic sample data, or
-DASHBOARD_DATA_SOURCE=airtable to hit the real base once it's unblocked.
+DASHBOARD_DATA_SOURCE=supabase to hit the real project once SUPABASE_URL /
+SUPABASE_SERVICE_KEY are configured.
 """
 from __future__ import annotations
 import os
@@ -78,83 +78,86 @@ def _get_mock_runs(account_id: str) -> list[WorkflowIqRun]:
     return _MOCK_RUNS
 
 
-# ── Real Airtable provider ──────────────────────────────────────────────────
+# ── Real Supabase provider ──────────────────────────────────────────────────
 
-def _airtable_table(table_name: str):
-    from pyairtable import Api
-    token = os.environ["AIRTABLE_API_TOKEN"]
-    base_id = os.environ["AIRTABLE_BASE_ID"]
-    return Api(token).table(base_id, table_name)
+def _supabase_client():
+    from supabase import create_client
+    url = os.environ["SUPABASE_URL"]
+    key = os.environ["SUPABASE_SERVICE_KEY"]
+    return create_client(url, key)
 
 
-def _get_airtable_account(token: str) -> Optional[Account]:
-    clients_table = os.getenv("AIRTABLE_CLIENTS_TABLE", "Clients")
-    table = _airtable_table(clients_table)
-    matches = table.all(formula=f"{{Dashboard Token}} = '{token}'")
-    if not matches:
+def _get_supabase_account(token: str) -> Optional[Account]:
+    client = _supabase_client()
+    res = client.table("clients").select("*").eq("dashboard_token", token).limit(1).execute()
+    if not res.data:
         return None
-    f = matches[0]["fields"]
+    r = res.data[0]
     return Account(
-        record_id=matches[0]["id"],
-        client_name=f.get("Client Name", ""),
-        dashboard_token=f.get("Dashboard Token", ""),
-        call_pin=f.get("Call PIN", ""),
-        sop_pack_size=int(f.get("SOP Pack Size", 0) or 0),
-        sop_credits_used=int(f.get("SOP Credits Used", 0) or 0),
-        contact_email=f.get("Contact Email", ""),
-        status=f.get("Status", "Active"),
+        record_id=r["id"],
+        client_name=r.get("client_name", ""),
+        dashboard_token=r.get("dashboard_token", ""),
+        call_pin=r.get("call_pin", ""),
+        sop_pack_size=int(r.get("sop_pack_size", 0) or 0),
+        sop_credits_used=int(r.get("sop_credits_used", 0) or 0),
+        contact_email=r.get("contact_email", ""),
+        status=r.get("status", "Active"),
     )
 
 
-def _get_airtable_sops(account_id: str) -> list[CompletedSop]:
-    calls_table = os.getenv("AIRTABLE_CALLS_TABLE", "Calls Log")
-    table = _airtable_table(calls_table)
-    records = table.all(formula=f"AND({{Client}} = '{account_id}', {{Status}} = 'Complete')")
+def _get_supabase_sops(account_id: str) -> list[CompletedSop]:
+    client = _supabase_client()
+    res = (
+        client.table("calls_log")
+        .select("*")
+        .eq("client_id", account_id)
+        .eq("status", "Complete")
+        .execute()
+    )
     return [
         CompletedSop(
-            call_id=r["fields"].get("Call ID", r["id"]),
-            process_name=r["fields"].get("Process Name", ""),
-            employee_name=r["fields"].get("Employee Name", ""),
-            call_timestamp=datetime.fromisoformat(r["fields"]["Call Timestamp"]) if r["fields"].get("Call Timestamp") else _now,
-            sop_doc_url=r["fields"].get("SOP Doc URL", ""),
-            status=r["fields"].get("Status", "Complete"),
+            call_id=r.get("call_id", r["id"]),
+            process_name=r.get("process_name", ""),
+            employee_name=r.get("employee_name", ""),
+            call_timestamp=datetime.fromisoformat(r["call_timestamp"]) if r.get("call_timestamp") else _now,
+            sop_doc_url=r.get("sop_doc_url", ""),
+            status=r.get("status", "Complete"),
         )
-        for r in records
+        for r in res.data
     ]
 
 
-def _get_airtable_runs(account_id: str) -> list[WorkflowIqRun]:
-    runs_table = os.getenv("AIRTABLE_RUNS_TABLE", "WorkflowIQ Runs")
-    table = _airtable_table(runs_table)
-    records = table.all(formula=f"{{Client}} = '{account_id}'")
+def _get_supabase_runs(account_id: str) -> list[WorkflowIqRun]:
+    client = _supabase_client()
+    res = client.table("workflowiq_runs").select("*").eq("client_id", account_id).execute()
     return [
         WorkflowIqRun(
-            run_timestamp=datetime.fromisoformat(r["fields"]["Run Timestamp"]) if r["fields"].get("Run Timestamp") else _now,
-            process_names=r["fields"].get("Process Names", ""),
-            sops_analysed=int(r["fields"].get("SOPs Analysed", 0) or 0),
-            automation_opportunities_found=int(r["fields"].get("Automation Opportunities Found", 0) or 0),
-            pdf_filename=r["fields"].get("PDF Filename", ""),
-            report_type=r["fields"].get("Report Type", "Single-SOP"),
+            run_timestamp=datetime.fromisoformat(r["run_timestamp"]) if r.get("run_timestamp") else _now,
+            process_names=r.get("process_names", ""),
+            sops_analysed=int(r.get("sops_analysed", 0) or 0),
+            automation_opportunities_found=int(r.get("automation_opportunities_found", 0) or 0),
+            pdf_filename=r.get("pdf_filename", ""),
+            report_type=r.get("report_type", "Single-SOP"),
         )
-        for r in records
+        for r in res.data
     ]
 
 
 # ── Public interface (routes to mock or real based on DATA_SOURCE) ─────────
 
 def get_account_by_token(token: str) -> Optional[Account]:
-    if DATA_SOURCE == "airtable":
-        return _get_airtable_account(token)
+    if DATA_SOURCE == "supabase":
+        return _get_supabase_account(token)
     return _get_mock_account(token)
 
 
 def get_completed_sops(account: Account) -> list[CompletedSop]:
-    if DATA_SOURCE == "airtable":
-        return _get_airtable_sops(account.record_id)
+    if DATA_SOURCE == "supabase":
+        return _get_supabase_sops(account.record_id)
     return _get_mock_sops(account.record_id)
 
 
 def get_workflowiq_runs(account: Account) -> list[WorkflowIqRun]:
-    if DATA_SOURCE == "airtable":
-        return _get_airtable_runs(account.record_id)
+    if DATA_SOURCE == "supabase":
+        return _get_supabase_runs(account.record_id)
     return _get_mock_runs(account.record_id)

@@ -1,4 +1,5 @@
 flask==3.0.3
-squareup==45.1.0.20260819
+stripe==15.6.1
+supabase==2.9.1
 python-dotenv==1.0.1
 gunicorn==22.0.0

@@ -1,12 +1,14 @@
-# Employee Email Feature — Activation Checklist
+# Employee Email + Dwayne Ops Notification — Activation Checklist
 
-Status: **Draft, not live.** Built 2026-09-14, imported into n8n as a separate
-inactive workflow (`SOPBot Main (DRAFT - employee email feature)`, id
+Status: **Draft, not live.** Built 2026-09-14, updated 2026-09-14 to add the
+Dwayne ops-notification branch. Lives in n8n as a separate inactive workflow
+(`SOPBot Main (DRAFT - employee email + Dwayne ops notification)`, id
 `fFboHgba81r265CZ`) so the live production workflow (`SOPBot Main`,
 `u6Le9BsH3tYVCU2T`) is untouched and still running exactly as before.
 
 ## What this adds
 
+**1. Employee email (conditional on the caller giving an email):**
 After the existing owner-notification email fires, if the employee gave an
 email address during the call, SOPBot now also:
 1. Finds or creates a GHL contact for that employee (`12c. Upsert Employee
@@ -16,6 +18,17 @@ email address during the call, SOPBot now also:
 
 If no email was captured, the call completes exactly as it does today - this
 is additive, not a replacement for the existing owner-notification flow.
+
+**2. Dwayne ops notification (unconditional, every call):**
+Immediately after either `12a. Owner Email (GHL)` (company matched) or
+`12b. Ops Alert (GHL)` (company unmatched) fires, the workflow now also:
+1. Upserts a GHL contact for `dwayne@digital-dada.com` (`12f. Upsert Dwayne
+   Contact (GHL)`)
+2. Emails him a summary of the completed call - company, employee, process
+   name, and a link to the SOP doc (`12g. Dwayne Notification (GHL)`)
+
+This fires on every completed call regardless of company match, independent
+of the employee-email branch above.
 
 ## Why it's not live yet
 
