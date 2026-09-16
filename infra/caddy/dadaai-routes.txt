@@ -20,7 +20,7 @@ dada-marketing.167.233.94.171.nip.io {
 dada-dashboard.167.233.94.171.nip.io {
     reverse_proxy dadaai-dashboard:8501
 }
-# Once DNS for the real domain (workflowiq.pro / sopbot equivalent) is
-# pointed at this server, add a matching block here for that domain too
-# (Caddy will auto-provision TLS for it the same way it does for the
-# nip.io hosts) - see docs/runbooks for the DNS cutover step.
+
+# NOTE: thesopbot.com is hosted on Vercel now (marketing/ deploys there via
+# git push), not via this Caddy instance - the dadaai-marketing container
+# above still serves the nip.io URL as a fallback/staging preview only.
