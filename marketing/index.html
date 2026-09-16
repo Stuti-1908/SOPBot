@@ -646,7 +646,7 @@
 
   /* ---------- Upsell strip ---------- */
   .upsell {
-    background: var(--ink);
+    background: var(--mono-bg);
     border-radius: 10px;
     padding: 48px 44px;
     display: grid;
@@ -663,13 +663,13 @@
     color: var(--accent);
   }
   .upsell h3 {
-    color: var(--ground);
+    color: var(--mono-fg);
     font-size: 1.6rem;
     font-weight: 500;
     margin-top: 12px;
   }
   .upsell p {
-    color: rgba(250, 246, 239, 0.65);
+    color: color-mix(in srgb, var(--mono-fg) 65%, transparent);
     margin-top: 10px;
     max-width: 50ch;
     line-height: 1.6;
