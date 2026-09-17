@@ -106,7 +106,7 @@ def stripe_webhook():
 
     if STRIPE_WEBHOOK_SECRET:
         try:
-            event = stripe.Webhook.construct_event(raw_body, signature, STRIPE_WEBHOOK_SECRET)
+            event = stripe.Webhook.construct_event(raw_body, signature, STRIPE_WEBHOOK_SECRET).to_dict()
         except (ValueError, stripe.error.SignatureVerificationError) as e:
             log.warning("Rejected webhook with invalid signature: %s", e)
             return jsonify(error="invalid_signature"), 401
