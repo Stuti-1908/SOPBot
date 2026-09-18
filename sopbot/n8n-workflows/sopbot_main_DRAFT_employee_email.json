@@ -2,8 +2,8 @@
   {
     "updatedAt": "2026-07-07T13:51:47.891Z",
     "createdAt": "2026-07-01T19:22:39.535Z",
-    "id": "fFboHgba81r265CZ",
-    "name": "SOPBot Main (DRAFT - employee email + Dwayne ops notification)",
+    "id": "7WEhsEke0OkStnmq",
+    "name": "SOPBot Main (DRAFT v2 - doc sharing fix)",
     "description": null,
     "active": false,
     "isArchived": false,
@@ -673,7 +673,7 @@
           "nodeCredentialType": "googleDriveOAuth2Api",
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={{ JSON.stringify({ name: $json.doc_name, parents: [ $('9. Company Router').item.json.fields['Drive Folder ID'] || '1Hn1CpdeMK0ikT8K52NSLosoo2689BZZJ' ] }) }}",
+          "jsonBody": "={{ JSON.stringify({ name: $json.doc_name, parents: ['1Hn1CpdeMK0ikT8K52NSLosoo2689BZZJ'] }) }}",
           "options": {
             "retry": {
               "retry": {
@@ -1098,6 +1098,76 @@
             "name": "DadaAI GHL"
           }
         }
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "={{ 'https://www.googleapis.com/drive/v3/files/' + $json.id + '/permissions' }}",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "googleDriveOAuth2Api",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ role: 'reader', type: 'anyone' }) }}",
+          "options": {
+            "retry": {
+              "retry": {
+                "maxRetries": 3
+              }
+            }
+          }
+        },
+        "id": "share-doc-matched",
+        "name": "16a2. Share Doc (Anyone Reader)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1150,
+          -320
+        ],
+        "credentials": {
+          "googleDriveOAuth2Api": {
+            "id": "HsauKIhtNk1nzT6a",
+            "name": "DadaAI Google Drive OAuth2"
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "={{ 'https://www.googleapis.com/drive/v3/files/' + $json.id + '/permissions' }}",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "googleDriveOAuth2Api",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ role: 'reader', type: 'anyone' }) }}",
+          "options": {
+            "retry": {
+              "retry": {
+                "maxRetries": 3
+              }
+            }
+          }
+        },
+        "id": "share-doc-unmatched",
+        "name": "16b2. Share Doc (Anyone Reader, Unmatched)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1150,
+          20
+        ],
+        "credentials": {
+          "googleDriveOAuth2Api": {
+            "id": "HsauKIhtNk1nzT6a",
+            "name": "DadaAI Google Drive OAuth2"
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000
       }
     ],
     "connections": {
@@ -1345,7 +1415,7 @@
         "main": [
           [
             {
-              "node": "17a. Populate Doc Tokens",
+              "node": "16a2. Share Doc (Anyone Reader)",
               "type": "main",
               "index": 0
             }
@@ -1378,7 +1448,7 @@
         "main": [
           [
             {
-              "node": "17b. Populate Doc Tokens (Unmatched)",
+              "node": "16b2. Share Doc (Anyone Reader, Unmatched)",
               "type": "main",
               "index": 0
             }
@@ -1473,6 +1543,28 @@
         "main": [
           []
         ]
+      },
+      "16a2. Share Doc (Anyone Reader)": {
+        "main": [
+          [
+            {
+              "node": "17a. Populate Doc Tokens",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "16b2. Share Doc (Anyone Reader, Unmatched)": {
+        "main": [
+          [
+            {
+              "node": "17b. Populate Doc Tokens (Unmatched)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       }
     },
     "settings": {
@@ -1484,35 +1576,7 @@
     "meta": null,
     "nodeGroups": [],
     "pinData": {},
-    "versionId": "88d0e127-d8d9-4683-a46d-526f6b9b235d",
-    "activeVersionId": null,
-    "versionCounter": 18,
     "triggerCount": 1,
-    "sourceWorkflowId": null,
-    "tags": [],
-    "shared": [
-      {
-        "updatedAt": "2026-09-14T09:59:09.818Z",
-        "createdAt": "2026-09-14T09:59:09.818Z",
-        "role": "workflow:owner",
-        "workflowId": "fFboHgba81r265CZ",
-        "projectId": "G4YPNOUBb8qVYD8F",
-        "project": {
-          "updatedAt": "2026-07-01T15:31:31.032Z",
-          "createdAt": "2026-07-01T14:33:21.712Z",
-          "id": "G4YPNOUBb8qVYD8F",
-          "name": "Stuti sng19.work@gmail.com <sng19.work@gmail.com>",
-          "type": "personal",
-          "icon": null,
-          "description": null,
-          "customTelemetryTags": [],
-          "creatorId": "659411d0-00f4-4312-ba4e-31648993ba9d"
-        }
-      }
-    ],
-    "versionMetadata": {
-      "name": null,
-      "description": null
-    }
+    "tags": []
   }
 ]
