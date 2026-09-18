@@ -15,7 +15,7 @@
         "typeVersion": 2,
         "position": [
           -1600,
-          -32
+          -128
         ],
         "webhookId": "sopbot-call-ended",
         "credentials": {
@@ -35,7 +35,7 @@
         "typeVersion": 2,
         "position": [
           -1376,
-          -32
+          -128
         ]
       },
       {
@@ -60,7 +60,7 @@
         "typeVersion": 2.1,
         "position": [
           -1152,
-          -32
+          -128
         ],
         "alwaysOutputData": true,
         "credentials": {
@@ -80,7 +80,7 @@
         "typeVersion": 2,
         "position": [
           -928,
-          -32
+          -128
         ],
         "alwaysOutputData": true
       },
@@ -115,7 +115,7 @@
         "typeVersion": 2,
         "position": [
           -704,
-          -32
+          -128
         ]
       },
       {
@@ -407,7 +407,7 @@
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
         "position": [
-          2640,
+          2656,
           -320
         ],
         "retryOnFail": true,
@@ -449,7 +449,7 @@
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
         "position": [
-          2640,
+          2656,
           -128
         ],
         "retryOnFail": true,
@@ -651,7 +651,7 @@
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
         "position": [
-          2192,
+          2208,
           -320
         ],
         "retryOnFail": true,
@@ -680,7 +680,7 @@
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
         "position": [
-          2192,
+          2208,
           -128
         ],
         "retryOnFail": true,
@@ -724,7 +724,7 @@
         "type": "n8n-nodes-base.airtable",
         "typeVersion": 2.1,
         "position": [
-          2416,
+          2432,
           -320
         ],
         "credentials": {
@@ -765,7 +765,7 @@
         "type": "n8n-nodes-base.airtable",
         "typeVersion": 2.1,
         "position": [
-          2416,
+          2432,
           -128
         ],
         "credentials": {
@@ -804,7 +804,7 @@
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.2,
         "position": [
-          2864,
+          3328,
           -320
         ]
       },
@@ -837,8 +837,8 @@
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
         "position": [
-          3088,
-          -240
+          3552,
+          -320
         ],
         "credentials": {
           "httpHeaderAuth": {
@@ -876,8 +876,8 @@
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
         "position": [
-          3312,
-          -240
+          3776,
+          -320
         ],
         "credentials": {
           "httpHeaderAuth": {
@@ -926,7 +926,7 @@
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.4,
         "position": [
-          1968,
+          1984,
           -128
         ],
         "id": "e5263e70-c329-41dc-8a0d-04b7e7d79f6e",
@@ -935,6 +935,64 @@
           "googleDriveOAuth2Api": {
             "id": "HsauKIhtNk1nzT6a",
             "name": "DadaAI Google Drive OAuth2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://services.leadconnectorhq.com/contacts/upserthttps://services.leadconnectorhq.com/contacts/upsert",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "httpHeaderAuth",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ locationId: \"HlI90j86nBEuhp9Oovf9\", email: \"dwayne@digital-dada.com\", name: \"Dwayne\", source: \"SOPBot ops notification\" }) }}\n",
+          "options": {}
+        },
+        "id": "d2cca60d-a3bd-44a5-a163-75bb78407ef9",
+        "name": "12f. Upsert Dwayne Contact (GHL)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2880,
+          -320
+        ],
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "XwAF3EozOcKKFzjq",
+            "name": "DadaAI GHL"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://services.leadconnectorhq.com/conversations/messages",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "httpHeaderAuth",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ type: \"Email\", contactId: $json.contact.id, subject: \"SOPBot call completed: \" + $('8. Parse Claude JSON').item.json.process_name, html: \"<p>A SOPBot call just completed.</p><p>Company: \" + $('8. Parse Claude JSON').item.json.company_name + \"</p><p>Employee: \" + $('8. Parse Claude JSON').item.json.employee_name + \"</p><p>Process: \" + $('8. Parse Claude JSON').item.json.process_name + \"</p><p><a href='https://docs.google.com/document/d/\" + $('16a. Copy Template Doc').item.json.id + \"/edit'>View SOP Document</a></p>\" }) }}\n",
+          "options": {}
+        },
+        "id": "dd094ac3-5a94-4369-83ae-bc2da42e7f36",
+        "name": "12g. Dwayne Notification (GHL)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          3104,
+          -320
+        ],
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "XwAF3EozOcKKFzjq",
+            "name": "DadaAI GHL"
           }
         }
       }
@@ -1096,7 +1154,7 @@
         "main": [
           [
             {
-              "node": "12e. Has Employee Email?",
+              "node": "12f. Upsert Dwayne Contact (GHL)",
               "type": "main",
               "index": 0
             }
@@ -1279,6 +1337,28 @@
             }
           ]
         ]
+      },
+      "12f. Upsert Dwayne Contact (GHL)": {
+        "main": [
+          [
+            {
+              "node": "12g. Dwayne Notification (GHL)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "12g. Dwayne Notification (GHL)": {
+        "main": [
+          [
+            {
+              "node": "12e. Has Employee Email?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       }
     },
     "active": true,
@@ -1287,7 +1367,7 @@
       "binaryMode": "separate",
       "errorWorkflow": "FrsqWitM0NmN5gqQ"
     },
-    "versionId": "4fd9b2f2-d322-45aa-b69c-a64df1cbb728",
+    "versionId": "5c0fa99a-434e-4e55-9fd4-85dc68672bdc",
     "meta": {
       "templateCredsSetupCompleted": true,
       "instanceId": "21c8a02513a85a0cadb9d4341dc41d9eca0dcb26d58db3056e6ab251ab37e6d3"
