@@ -596,15 +596,20 @@
     font-family: 'Space Mono', monospace;
   }
   .plan-cta {
+    display: block;
+    width: 100%;
     margin-top: 24px;
     text-align: center;
     padding: 12px;
     border-radius: 3px;
     text-decoration: none;
+    font-family: inherit;
     font-weight: 500;
     font-size: 0.9rem;
     border: 1px solid var(--rule);
+    background: var(--ground);
     color: var(--ink);
+    cursor: pointer;
   }
   .plan.featured .plan-cta {
     background: var(--accent);
@@ -883,7 +888,9 @@
           <li>Dashboard + call-in number</li>
           <li>Shareable employee prep sheet</li>
         </ul>
-        <a href="#" class="plan-cta">Buy Starter</a>
+        <form method="POST" action="https://sop-bot-h57s.vercel.app/checkout/sopbot_starter">
+          <button type="submit" class="plan-cta">Buy Starter</button>
+        </form>
       </div>
       <div class="plan featured reveal">
         <span class="plan-tag">Most teams choose this</span>
@@ -897,7 +904,9 @@
           <li>Shareable employee prep sheet</li>
           <li>Priority credit top-ups</li>
         </ul>
-        <a href="#" class="plan-cta">Buy Team</a>
+        <form method="POST" action="https://sop-bot-h57s.vercel.app/checkout/sopbot_team">
+          <button type="submit" class="plan-cta">Buy Team</button>
+        </form>
       </div>
       <div class="plan reveal">
         <div class="plan-name">Department</div>
@@ -910,7 +919,9 @@
           <li>Shareable employee prep sheet</li>
           <li>Priority credit top-ups</li>
         </ul>
-        <a href="#" class="plan-cta">Buy Department</a>
+        <form method="POST" action="https://sop-bot-h57s.vercel.app/checkout/sopbot_department">
+          <button type="submit" class="plan-cta">Buy Department</button>
+        </form>
       </div>
     </div>
 
@@ -925,7 +936,9 @@
           <li>Automation opportunities, scored</li>
           <li>Flowchart + executive summary</li>
         </ul>
-        <a href="#" class="plan-cta">Run a report</a>
+        <form method="POST" action="https://sop-bot-h57s.vercel.app/checkout/workflowiq_single">
+          <button type="submit" class="plan-cta">Run a report</button>
+        </form>
       </div>
       <div class="plan featured reveal">
         <span class="plan-tag">Best for a full library</span>
@@ -938,7 +951,9 @@
           <li>Shared bottlenecks across processes</li>
           <li>Cross-process automation opportunities</li>
         </ul>
-        <a href="#" class="plan-cta">Run a report</a>
+        <form method="POST" action="https://sop-bot-h57s.vercel.app/checkout/workflowiq_multi">
+          <button type="submit" class="plan-cta">Run a report</button>
+        </form>
       </div>
       <div class="plan reveal">
         <div class="plan-name">Re-run</div>
@@ -949,7 +964,9 @@
           <li>Updated analysis on the latest SOP</li>
           <li>New PDF, same process</li>
         </ul>
-        <a href="#" class="plan-cta">Re-run a report</a>
+        <form method="POST" action="https://sop-bot-h57s.vercel.app/checkout/workflowiq_rerun">
+          <button type="submit" class="plan-cta">Re-run a report</button>
+        </form>
       </div>
     </div>
 
