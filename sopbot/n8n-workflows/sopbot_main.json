@@ -941,9 +941,22 @@
       {
         "parameters": {
           "method": "POST",
-          "url": "https://services.leadconnectorhq.com/contacts/upserthttps://services.leadconnectorhq.com/contacts/upsert",
+          "url": "https://services.leadconnectorhq.com/contacts/upsert",
           "authentication": "predefinedCredentialType",
           "nodeCredentialType": "httpHeaderAuth",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Version",
+                "value": "2021-07-28"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
           "sendBody": true,
           "specifyBody": "json",
           "jsonBody": "={{ JSON.stringify({ locationId: \"HlI90j86nBEuhp9Oovf9\", email: \"dwayne@digital-dada.com\", name: \"Dwayne\", source: \"SOPBot ops notification\" }) }}\n",
@@ -973,6 +986,19 @@
           "url": "https://services.leadconnectorhq.com/conversations/messages",
           "authentication": "predefinedCredentialType",
           "nodeCredentialType": "httpHeaderAuth",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Version",
+                "value": "2021-07-28"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
           "sendBody": true,
           "specifyBody": "json",
           "jsonBody": "={{ JSON.stringify({ type: \"Email\", contactId: $json.contact.id, subject: \"SOPBot call completed: \" + $('8. Parse Claude JSON').item.json.process_name, html: \"<p>A SOPBot call just completed.</p><p>Company: \" + $('8. Parse Claude JSON').item.json.company_name + \"</p><p>Employee: \" + $('8. Parse Claude JSON').item.json.employee_name + \"</p><p>Process: \" + $('8. Parse Claude JSON').item.json.process_name + \"</p><p><a href='https://docs.google.com/document/d/\" + $('16a. Copy Template Doc').item.json.id + \"/edit'>View SOP Document</a></p>\" }) }}\n",
@@ -1367,7 +1393,7 @@
       "binaryMode": "separate",
       "errorWorkflow": "FrsqWitM0NmN5gqQ"
     },
-    "versionId": "5c0fa99a-434e-4e55-9fd4-85dc68672bdc",
+    "versionId": "1cabfb34-8dca-4f43-abb7-c779017d1865",
     "meta": {
       "templateCredsSetupCompleted": true,
       "instanceId": "21c8a02513a85a0cadb9d4341dc41d9eca0dcb26d58db3056e6ab251ab37e6d3"
