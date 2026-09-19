@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}SOPBot Dashboard{% endblock %}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Work+Sans:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --ground: #FAF6EF;
+    --ground-raised: #F3ECDF;
+    --ink: #241F1A;
+    --ink-soft: #5C5348;
+    --ink-faint: #9B9184;
+    --accent: #C1602A;
+    --accent-soft: #E8DDCC;
+    --confirm: #5E7C5A;
+    --warn: #B5502A;
+    --rule: #E3D9C6;
+    --shadow: rgba(36, 31, 26, 0.08);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #1C1A17;
+      --ground-raised: #262220;
+      --ink: #F3EDE4;
+      --ink-soft: #C9BFB2;
+      --ink-faint: #837A6E;
+      --accent: #E2934F;
+      --accent-soft: #3A2F24;
+      --confirm: #8FB08A;
+      --warn: #E2934F;
+      --rule: #3A342C;
+      --shadow: rgba(0, 0, 0, 0.35);
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: inherit; }
+
+  h1, h2, h3 {
+    font-family: 'Fraunces', Georgia, serif;
+    text-wrap: balance;
+    margin: 0;
+    line-height: 1.08;
+  }
+
+  .mono { font-family: 'Space Mono', 'SF Mono', monospace; }
+
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+  }
+
+  .card {
+    background: var(--ground-raised);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin: 20px 0;
+  }
+
+  .metric {
+    text-align: center;
+  }
+
+  .metric .value {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 2rem;
+  }
+
+  .metric .label {
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+  }
+
+  .progress-track {
+    background: var(--rule);
+    border-radius: 999px;
+    height: 8px;
+    overflow: hidden;
+    margin: 16px 0;
+  }
+
+  .progress-fill {
+    background: var(--accent);
+    height: 100%;
+  }
+
+  .sop-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .sop-row:last-child { border-bottom: none; }
+
+  .btn {
+    display: inline-block;
+    padding: 10px 18px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+    border: 1px solid var(--rule);
+    background: var(--ground);
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .caption {
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--rule);
+    margin: 32px 0;
+  }
+
+  .badge-warn {
+    background: var(--accent-soft);
+    color: var(--warn);
+    padding: 10px 14px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+{% block content %}{% endblock %}
+</div>
+</body>
+</html>

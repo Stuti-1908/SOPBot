@@ -1,0 +1,88 @@
+{% extends "_base.html" %}
+{% block title %}Welcome back, {{ account.client_name }}{% endblock %}
+{% block content %}
+<h1>Welcome back, {{ account.client_name }}</h1>
+
+{% if account.status != "Active" %}
+<p class="badge-warn">Account status: {{ account.status }}. Contact support if this looks wrong.</p>
+{% endif %}
+
+<div class="card">
+  <h3>Your SOP pack</h3>
+  <div class="metrics">
+    <div class="metric">
+      <div class="value">{{ account.sop_credits_used }}</div>
+      <div class="label">Credits used</div>
+    </div>
+    <div class="metric">
+      <div class="value">{{ account.sop_credits_remaining }}</div>
+      <div class="label">Credits remaining</div>
+    </div>
+    <div class="metric">
+      <div class="value">{{ account.sop_pack_size }}</div>
+      <div class="label">Pack size</div>
+    </div>
+  </div>
+  <div class="progress-track">
+    <div class="progress-fill" style="width: {{ progress_pct }}%;"></div>
+  </div>
+  {% if account.sop_credits_remaining == 0 %}
+  <p class="caption">You're out of credits. Top up à la carte at $49/SOP, or step up to a bigger pack.</p>
+  {% elif account.sop_credits_remaining <= 2 %}
+  <p class="caption">Only {{ account.sop_credits_remaining }} credit(s) left — consider topping up soon.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h3>Share with your team</h3>
+  <p><strong>Call-in number:</strong> {{ call_in_number }}</p>
+  <p><strong>Your PIN:</strong> <span class="mono">{{ account.call_pin }}</span></p>
+  <p class="caption">Give employees the number and the prep sheet so they know what to expect before calling. When they mention your company name during the call, their SOP is matched to this dashboard automatically.</p>
+</div>
+
+<hr class="divider">
+
+<h3>Your SOP library</h3>
+{% if not sops %}
+<p>No completed SOPs yet. Once your team starts calling, they'll show up here automatically.</p>
+{% else %}
+<div class="card">
+  {% for sop in sops %}
+  <div class="sop-row">
+    <div>
+      <div><strong>{{ sop.process_name }}</strong></div>
+      <div class="caption">Documented by {{ sop.employee_name }} · {{ sop.call_timestamp.strftime('%b %d, %Y') }}</div>
+    </div>
+    {% if sop.sop_doc_url %}
+    <a class="btn" href="{{ sop.sop_doc_url }}" target="_blank" rel="noopener">View SOP</a>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if show_upsell %}
+<hr class="divider">
+<div class="card">
+  <h3>See where you're losing hours every week</h3>
+  <p>You've documented {{ sops|length }} processes. Run a WorkflowIQ report to find automation opportunities across them — scored by time saved, effort, and impact.</p>
+  <a class="btn btn-primary" href="{{ workflowiq_url }}">Run a WorkflowIQ report →</a>
+</div>
+{% endif %}
+
+{% if runs %}
+<hr class="divider">
+<h3>Your WorkflowIQ reports</h3>
+<div class="card">
+  {% for run in runs %}
+  <div class="sop-row">
+    <div>
+      <div><strong>{{ run.process_names }}</strong> ({{ run.report_type }})</div>
+      <div class="caption">{{ run.run_timestamp.strftime('%b %d, %Y') }} · {{ run.automation_opportunities_found }} automation opportunities found</div>
+    </div>
+    <div class="caption">{{ run.pdf_filename }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
