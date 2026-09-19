@@ -63,6 +63,16 @@ def create_checkout(product_id: str):
         # metadata carries the product id through to the webhook payload
         # (see session.metadata in fulfillment._extract_order_details)
         metadata={"product_id": product.id},
+        # Collected so fulfillment can set clients.client_name in Supabase -
+        # the voice call flow matches companies by this exact spoken name,
+        # so it must match what the customer types here (see
+        # fulfillment._write_to_supabase and the n8n Company Router).
+        custom_fields=[{
+            "key": "company_name",
+            "label": {"type": "custom", "custom": "Company name (used to match your team's calls)"},
+            "type": "text",
+            "optional": False,
+        }],
     )
     if buyer_email:
         kwargs["customer_email"] = buyer_email

@@ -22,6 +22,18 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 
 
+def _extract_company_name(payment: dict) -> str:
+    """Pulls the "company_name" custom field collected at checkout (see
+    main.py's custom_fields on Session.create). This is the value the
+    voice call flow will later match against by spoken company name, so
+    it must be stored on clients.client_name exactly as the customer typed
+    it here."""
+    for field in payment.get("custom_fields") or []:
+        if field.get("key") == "company_name":
+            return (field.get("text") or {}).get("value", "") or ""
+    return ""
+
+
 def _extract_order_details(payment: dict) -> dict:
     """payment is a Stripe Checkout Session object (see main.py webhook
     handler, which passes session.to_dict())."""
@@ -31,6 +43,7 @@ def _extract_order_details(payment: dict) -> dict:
         "payment_id": payment.get("id"),
         "amount_cents": payment.get("amount_total", 0),
         "buyer_email": buyer_email,
+        "company_name": _extract_company_name(payment),
         "product_id": product_id,
         "received_at": datetime.now(timezone.utc).isoformat(),
     }
@@ -60,7 +73,7 @@ def _write_to_supabase(order: dict) -> None:
 
     existing = (
         client.table("clients")
-        .select("id, sop_pack_size")
+        .select("id, sop_pack_size, client_name")
         .eq("contact_email", order["buyer_email"])
         .limit(1)
         .execute()
@@ -68,14 +81,17 @@ def _write_to_supabase(order: dict) -> None:
     if existing.data:
         client_id = existing.data[0]["id"]
         new_pack_size = int(existing.data[0].get("sop_pack_size", 0) or 0) + sop_credits
-        client.table("clients").update({
-            "sop_pack_size": new_pack_size,
-            "status": "Active",
-        }).eq("id", client_id).execute()
+        update = {"sop_pack_size": new_pack_size, "status": "Active"}
+        # Only overwrite client_name if it isn't set yet - a repeat top-up
+        # shouldn't blank it out if this order's field was left empty.
+        if order.get("company_name") and not existing.data[0].get("client_name"):
+            update["client_name"] = order["company_name"]
+        client.table("clients").update(update).eq("id", client_id).execute()
     else:
         import secrets
         client.table("clients").insert({
             "contact_email": order["buyer_email"],
+            "client_name": order.get("company_name", ""),
             "status": "Active",
             "sop_pack_size": sop_credits,
             "sop_credits_used": 0,

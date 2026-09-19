@@ -399,7 +399,7 @@
           },
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={{ JSON.stringify({\n  type: \"Email\",\n  contactId: $('9b. Normalize Company Match').item.json.ghl_contact_id,\n  subject: \"New SOP Ready: \" + $('8. Parse Claude JSON').item.json.process_name + \" â€” \" + $('8. Parse Claude JSON').item.json.employee_name,\n  html: \"<p>A new SOP has been generated.</p><p>Process: \" + $('8. Parse Claude JSON').item.json.process_name + \"</p><p>Company: \" + $('8. Parse Claude JSON').item.json.company_name + \"</p><p><a href='https://docs.google.com/document/d/\" + $('16a. Copy Template Doc').item.json.id + \"/edit'>View SOP Document</a></p>\"\n}) }}",
+          "jsonBody": "={{ JSON.stringify({\n  type: \"Email\",\n  contactId: $('9b. Normalize Company Match').item.json.ghl_contact_id,\n  subject: \"New SOP Ready: \" + $('8. Parse Claude JSON').item.json.process_name + \" \u00e2\u20ac\u201d \" + $('8. Parse Claude JSON').item.json.employee_name,\n  html: \"<p>A new SOP has been generated.</p><p>Process: \" + $('8. Parse Claude JSON').item.json.process_name + \"</p><p>Company: \" + $('8. Parse Claude JSON').item.json.company_name + \"</p><p><a href='https://docs.google.com/document/d/\" + $('16a. Copy Template Doc').item.json.id + \"/edit'>View SOP Document</a></p>\"\n}) }}",
           "options": {}
         },
         "id": "owner-email-ghl",
@@ -441,7 +441,7 @@
           },
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={{ JSON.stringify({\n  type: \"Email\",\n  contactId: \"FGRKMuONxezAC6d940BJ\",\n  subject: \"ACTION REQUIRED â€” SOPBot: Unmatched Company on Call\",\n  html: \"<p>Unmatched company on a SOPBot call.</p><p>Raw name: \" + $('8. Parse Claude JSON').item.json.company_name + \"</p><p>Employee: \" + $('8. Parse Claude JSON').item.json.employee_name + \"</p><p>Process: \" + $('8. Parse Claude JSON').item.json.process_name + \"</p><p>Call ID: \" + $('3. Parse Vapi Payload').item.json.call_id + \"</p><p><a href='https://docs.google.com/document/d/\" + $('16b. Copy Template Doc (Unmatched)').item.json.id + \"/edit'>View SOP Document (Unmatched folder)</a></p>\"\n}) }}",
+          "jsonBody": "={{ JSON.stringify({\n  type: \"Email\",\n  contactId: \"FGRKMuONxezAC6d940BJ\",\n  subject: \"ACTION REQUIRED \u00e2\u20ac\u201d SOPBot: Unmatched Company on Call\",\n  html: \"<p>Unmatched company on a SOPBot call.</p><p>Raw name: \" + $('8. Parse Claude JSON').item.json.company_name + \"</p><p>Employee: \" + $('8. Parse Claude JSON').item.json.employee_name + \"</p><p>Process: \" + $('8. Parse Claude JSON').item.json.process_name + \"</p><p>Call ID: \" + $('3. Parse Vapi Payload').item.json.call_id + \"</p><p><a href='https://docs.google.com/document/d/\" + $('16b. Copy Template Doc (Unmatched)').item.json.id + \"/edit'>View SOP Document (Unmatched folder)</a></p>\"\n}) }}",
           "options": {}
         },
         "id": "ops-alert-ghl",
@@ -553,7 +553,7 @@
       },
       {
         "parameters": {
-          "jsCode": "const NL = String.fromCharCode(10);\nconst data = $('8. Parse Claude JSON').item.json;\n\nfunction esc(s) { return (s === null || s === undefined) ? '' : String(s); }\n\nconst stepsBlock = (data.steps || []).map(function(s) {\n  const tools = (s.tools_used || []).join(', ') || 'None specified';\n  const notes = [].concat(s.decision_points || [], s.pain_points || [], s.common_errors || []).map(function(x){ return typeof x === 'string' ? x : JSON.stringify(x); }).join('; ') || 'None';\n  const done = s.completion_indicator || 'Not specified';\n  const parts = [\n    'Step ' + s.step_number + ': ' + esc(s.action || s.title),\n    'Tools: ' + tools,\n    'Notes: ' + notes,\n    'Done when: ' + done\n  ];\n  return parts.join(NL);\n}).join(NL + NL);\n\nconst toolsSet = new Set();\n(data.steps || []).forEach(function(s) { (s.tools_used || []).forEach(function(t) { toolsSet.add(t); }); });\n(data.tools_and_resources || []).forEach(function(t) { toolsSet.add(t); });\nconst toolsList = Array.from(toolsSet).join(', ') || 'None specified';\n\nconst exceptionHandling = (data.exception_handling || []).length\n  ? data.exception_handling.map(function(e) {\n      return typeof e === 'string' ? e : ('If ' + (e.if || e.condition) + ': ' + (e.then || e.action));\n    }).join(NL)\n  : 'None captured during this call.';\n\nconst today = new Date().toISOString().slice(0, 10);\n\nreturn [{\n  json: {\n    doc_name: esc(data.process_name) + ' â€” ' + esc(data.employee_name) + ' â€” ' + today,\n    tokens: {\n      '{{COMPANY_NAME}}': esc(data.company_name),\n      '{{PROCESS_NAME}}': esc(data.process_name),\n      '{{EMPLOYEE_ROLE}}': esc(data.employee_role),\n      '{{EMPLOYEE_NAME}}': esc(data.employee_name),\n      '{{EMPLOYEE_TENURE}}': esc(data.employee_tenure),\n      '{{DATE}}': today,\n      '{{PROCESS_FREQUENCY}}': esc(data.frequency || data.process_frequency),\n      '{{ROLE_SUMMARY}}': esc(data.role_summary),\n      '{{PROCESS_TRIGGER}}': esc(data.process_trigger),\n      '{{TOOLS_LIST}}': toolsList,\n      '{{STEPS_BLOCK}}': stepsBlock || 'No steps captured.',\n      '{{EXCEPTION_HANDLING}}': exceptionHandling,\n      '{{COMPLETION_CRITERIA}}': esc(data.completion_criteria),\n      '{{INSIDER_NOTES}}': esc(data.insider_notes || data.notes)\n    }\n  }\n}];\n"
+          "jsCode": "const NL = String.fromCharCode(10);\nconst data = $('8. Parse Claude JSON').item.json;\n\nfunction esc(s) { return (s === null || s === undefined) ? '' : String(s); }\n\nconst stepsBlock = (data.steps || []).map(function(s) {\n  const tools = (s.tools_used || []).join(', ') || 'None specified';\n  const notes = [].concat(s.decision_points || [], s.pain_points || [], s.common_errors || []).map(function(x){ return typeof x === 'string' ? x : JSON.stringify(x); }).join('; ') || 'None';\n  const done = s.completion_indicator || 'Not specified';\n  const parts = [\n    'Step ' + s.step_number + ': ' + esc(s.action || s.title),\n    'Tools: ' + tools,\n    'Notes: ' + notes,\n    'Done when: ' + done\n  ];\n  return parts.join(NL);\n}).join(NL + NL);\n\nconst toolsSet = new Set();\n(data.steps || []).forEach(function(s) { (s.tools_used || []).forEach(function(t) { toolsSet.add(t); }); });\n(data.tools_and_resources || []).forEach(function(t) { toolsSet.add(t); });\nconst toolsList = Array.from(toolsSet).join(', ') || 'None specified';\n\nconst exceptionHandling = (data.exception_handling || []).length\n  ? data.exception_handling.map(function(e) {\n      return typeof e === 'string' ? e : ('If ' + (e.if || e.condition) + ': ' + (e.then || e.action));\n    }).join(NL)\n  : 'None captured during this call.';\n\nconst today = new Date().toISOString().slice(0, 10);\n\nreturn [{\n  json: {\n    doc_name: esc(data.process_name) + ' \u00e2\u20ac\u201d ' + esc(data.employee_name) + ' \u00e2\u20ac\u201d ' + today,\n    tokens: {\n      '{{COMPANY_NAME}}': esc(data.company_name),\n      '{{PROCESS_NAME}}': esc(data.process_name),\n      '{{EMPLOYEE_ROLE}}': esc(data.employee_role),\n      '{{EMPLOYEE_NAME}}': esc(data.employee_name),\n      '{{EMPLOYEE_TENURE}}': esc(data.employee_tenure),\n      '{{DATE}}': today,\n      '{{PROCESS_FREQUENCY}}': esc(data.frequency || data.process_frequency),\n      '{{ROLE_SUMMARY}}': esc(data.role_summary),\n      '{{PROCESS_TRIGGER}}': esc(data.process_trigger),\n      '{{TOOLS_LIST}}': toolsList,\n      '{{STEPS_BLOCK}}': stepsBlock || 'No steps captured.',\n      '{{EXCEPTION_HANDLING}}': exceptionHandling,\n      '{{COMPLETION_CRITERIA}}': esc(data.completion_criteria),\n      '{{INSIDER_NOTES}}': esc(data.insider_notes || data.notes)\n    }\n  }\n}];\n"
         },
         "id": "prepare-doc-fields-matched",
         "name": "14a. Prepare Doc Fields (Matched)",
@@ -566,7 +566,7 @@
       },
       {
         "parameters": {
-          "jsCode": "const NL = String.fromCharCode(10);\nconst data = $('8. Parse Claude JSON').item.json;\n\nfunction esc(s) { return (s === null || s === undefined) ? '' : String(s); }\n\nconst stepsBlock = (data.steps || []).map(function(s) {\n  const tools = (s.tools_used || []).join(', ') || 'None specified';\n  const notes = [].concat(s.decision_points || [], s.pain_points || [], s.common_errors || []).map(function(x){ return typeof x === 'string' ? x : JSON.stringify(x); }).join('; ') || 'None';\n  const done = s.completion_indicator || 'Not specified';\n  const parts = [\n    'Step ' + s.step_number + ': ' + esc(s.action || s.title),\n    'Tools: ' + tools,\n    'Notes: ' + notes,\n    'Done when: ' + done\n  ];\n  return parts.join(NL);\n}).join(NL + NL);\n\nconst toolsSet = new Set();\n(data.steps || []).forEach(function(s) { (s.tools_used || []).forEach(function(t) { toolsSet.add(t); }); });\n(data.tools_and_resources || []).forEach(function(t) { toolsSet.add(t); });\nconst toolsList = Array.from(toolsSet).join(', ') || 'None specified';\n\nconst exceptionHandling = (data.exception_handling || []).length\n  ? data.exception_handling.map(function(e) {\n      return typeof e === 'string' ? e : ('If ' + (e.if || e.condition) + ': ' + (e.then || e.action));\n    }).join(NL)\n  : 'None captured during this call.';\n\nconst today = new Date().toISOString().slice(0, 10);\n\nreturn [{\n  json: {\n    doc_name: esc(data.process_name) + ' â€” ' + esc(data.employee_name) + ' â€” ' + today,\n    tokens: {\n      '{{COMPANY_NAME}}': esc(data.company_name),\n      '{{PROCESS_NAME}}': esc(data.process_name),\n      '{{EMPLOYEE_ROLE}}': esc(data.employee_role),\n      '{{EMPLOYEE_NAME}}': esc(data.employee_name),\n      '{{EMPLOYEE_TENURE}}': esc(data.employee_tenure),\n      '{{DATE}}': today,\n      '{{PROCESS_FREQUENCY}}': esc(data.frequency || data.process_frequency),\n      '{{ROLE_SUMMARY}}': esc(data.role_summary),\n      '{{PROCESS_TRIGGER}}': esc(data.process_trigger),\n      '{{TOOLS_LIST}}': toolsList,\n      '{{STEPS_BLOCK}}': stepsBlock || 'No steps captured.',\n      '{{EXCEPTION_HANDLING}}': exceptionHandling,\n      '{{COMPLETION_CRITERIA}}': esc(data.completion_criteria),\n      '{{INSIDER_NOTES}}': esc(data.insider_notes || data.notes)\n    }\n  }\n}];\n"
+          "jsCode": "const NL = String.fromCharCode(10);\nconst data = $('8. Parse Claude JSON').item.json;\n\nfunction esc(s) { return (s === null || s === undefined) ? '' : String(s); }\n\nconst stepsBlock = (data.steps || []).map(function(s) {\n  const tools = (s.tools_used || []).join(', ') || 'None specified';\n  const notes = [].concat(s.decision_points || [], s.pain_points || [], s.common_errors || []).map(function(x){ return typeof x === 'string' ? x : JSON.stringify(x); }).join('; ') || 'None';\n  const done = s.completion_indicator || 'Not specified';\n  const parts = [\n    'Step ' + s.step_number + ': ' + esc(s.action || s.title),\n    'Tools: ' + tools,\n    'Notes: ' + notes,\n    'Done when: ' + done\n  ];\n  return parts.join(NL);\n}).join(NL + NL);\n\nconst toolsSet = new Set();\n(data.steps || []).forEach(function(s) { (s.tools_used || []).forEach(function(t) { toolsSet.add(t); }); });\n(data.tools_and_resources || []).forEach(function(t) { toolsSet.add(t); });\nconst toolsList = Array.from(toolsSet).join(', ') || 'None specified';\n\nconst exceptionHandling = (data.exception_handling || []).length\n  ? data.exception_handling.map(function(e) {\n      return typeof e === 'string' ? e : ('If ' + (e.if || e.condition) + ': ' + (e.then || e.action));\n    }).join(NL)\n  : 'None captured during this call.';\n\nconst today = new Date().toISOString().slice(0, 10);\n\nreturn [{\n  json: {\n    doc_name: esc(data.process_name) + ' \u00e2\u20ac\u201d ' + esc(data.employee_name) + ' \u00e2\u20ac\u201d ' + today,\n    tokens: {\n      '{{COMPANY_NAME}}': esc(data.company_name),\n      '{{PROCESS_NAME}}': esc(data.process_name),\n      '{{EMPLOYEE_ROLE}}': esc(data.employee_role),\n      '{{EMPLOYEE_NAME}}': esc(data.employee_name),\n      '{{EMPLOYEE_TENURE}}': esc(data.employee_tenure),\n      '{{DATE}}': today,\n      '{{PROCESS_FREQUENCY}}': esc(data.frequency || data.process_frequency),\n      '{{ROLE_SUMMARY}}': esc(data.role_summary),\n      '{{PROCESS_TRIGGER}}': esc(data.process_trigger),\n      '{{TOOLS_LIST}}': toolsList,\n      '{{STEPS_BLOCK}}': stepsBlock || 'No steps captured.',\n      '{{EXCEPTION_HANDLING}}': exceptionHandling,\n      '{{COMPLETION_CRITERIA}}': esc(data.completion_criteria),\n      '{{INSIDER_NOTES}}': esc(data.insider_notes || data.notes)\n    }\n  }\n}];\n"
         },
         "id": "prepare-doc-fields-unmatched",
         "name": "14b. Prepare Doc Fields (Unmatched)",
@@ -1021,9 +1021,98 @@
             "name": "DadaAI GHL"
           }
         }
+      },
+      {
+        "parameters": {
+          "resource": "row",
+          "operation": "getAll",
+          "tableId": "clients",
+          "returnAll": false,
+          "limit": 1,
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "client_name",
+                "condition": "ilike",
+                "keyValue": "={{ $('8. Parse Claude JSON').item.json.company_name }}"
+              }
+            ]
+          }
+        },
+        "id": "18c-find-supabase-client",
+        "name": "18c. Find Supabase Client",
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          2544,
+          -400
+        ],
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "supabaseApi": {
+            "id": "LcjvXxI8vq81hOBq",
+            "name": "DadaAI Supabase (native)"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "resource": "row",
+          "operation": "create",
+          "tableId": "calls_log",
+          "dataToSend": "defineBelow",
+          "fieldsUi": {
+            "fieldValues": [
+              {
+                "fieldId": "client_id",
+                "fieldValue": "={{ $json.id }}"
+              },
+              {
+                "fieldId": "call_id",
+                "fieldValue": "={{ $('3. Parse Vapi Payload').item.json.call_id }}"
+              },
+              {
+                "fieldId": "process_name",
+                "fieldValue": "={{ $('8. Parse Claude JSON').item.json.process_name }}"
+              },
+              {
+                "fieldId": "employee_name",
+                "fieldValue": "={{ $('8. Parse Claude JSON').item.json.employee_name }}"
+              },
+              {
+                "fieldId": "sop_doc_url",
+                "fieldValue": "={{ 'https://docs.google.com/document/d/' + $('16a. Copy Template Doc').item.json.id + '/edit' }}"
+              },
+              {
+                "fieldId": "status",
+                "fieldValue": "Complete"
+              }
+            ]
+          }
+        },
+        "id": "18d-insert-supabase-call-log",
+        "name": "18d. Insert Supabase Call Log",
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          2544,
+          -240
+        ],
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "supabaseApi": {
+            "id": "LcjvXxI8vq81hOBq",
+            "name": "DadaAI Supabase (native)"
+          }
+        },
+        "onError": "continueRegularOutput"
       }
     ],
-    "pinData": {},
     "connections": {
       "1. Webhook Trigger": {
         "main": [
@@ -1296,7 +1385,7 @@
         "main": [
           [
             {
-              "node": "12a. Owner Email (GHL)",
+              "node": "18c. Find Supabase Client",
               "type": "main",
               "index": 0
             }
@@ -1385,21 +1474,35 @@
             }
           ]
         ]
+      },
+      "18c. Find Supabase Client": {
+        "main": [
+          [
+            {
+              "node": "18d. Insert Supabase Call Log",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "18d. Insert Supabase Call Log": {
+        "main": [
+          [
+            {
+              "node": "12a. Owner Email (GHL)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       }
     },
-    "active": true,
+    "pinData": {},
     "settings": {
       "executionOrder": "v1",
       "binaryMode": "separate",
       "errorWorkflow": "FrsqWitM0NmN5gqQ"
-    },
-    "versionId": "1cabfb34-8dca-4f43-abb7-c779017d1865",
-    "meta": {
-      "templateCredsSetupCompleted": true,
-      "instanceId": "21c8a02513a85a0cadb9d4341dc41d9eca0dcb26d58db3056e6ab251ab37e6d3"
-    },
-    "nodeGroups": [],
-    "id": "fFboHgba81r265CZ",
-    "tags": []
+    }
   }
 ]
