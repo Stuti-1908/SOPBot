@@ -23,6 +23,7 @@ class JobState:
     pdf_path: Optional[str] = None
     error: Optional[str] = None
     sops: list = field(default_factory=list)
+    order: Optional[object] = None  # PendingOrder this run fulfils, if any (see app.order_delivery)
 
 
 def start_job(sops: list[SopInput]) -> JobState:

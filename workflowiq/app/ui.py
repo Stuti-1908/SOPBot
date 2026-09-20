@@ -5,6 +5,7 @@ import streamlit as st
 from app.google_drive.reader import fetch_sop_from_drive
 from app.job_runner import start_job
 from app.airtable_logger.logger import log_run
+from app.order_delivery import list_pending_orders, mark_order_complete, email_report_to_customer
 from app.schemas import SopInput
 
 
@@ -18,6 +19,8 @@ def render_ui() -> None:
     if "job" in st.session_state:
         _poll_and_display()
         return
+
+    _render_pending_orders()
 
     mode = st.radio(
         "SOP Source",
@@ -73,9 +76,61 @@ def render_ui() -> None:
             _launch(sops)
 
 
+def _deliver_to_order(job, pdf_path: str, result) -> None:
+    """Marks the linked Supabase order Complete and emails the customer
+    their PDF, closing the purchase -> report loop. Runs once per order
+    (guarded by a session_state flag) since Streamlit reruns this whole
+    function on every interaction while the completed state is displayed."""
+    opp_count = sum(len(sr.automation_map.opportunities) for sr in result.sop_results)
+    processes = ", ".join(s.process_name for s in job.sops if s.process_name)
+
+    try:
+        mark_order_complete(
+            order_id=job.order.id,
+            process_names=processes,
+            sops_analysed=len(job.sops),
+            automation_opportunities_found=opp_count,
+            pdf_filename=os.path.basename(pdf_path),
+        )
+        email_report_to_customer(job.order.contact_email, pdf_path)
+        st.success(f"Order marked complete and report emailed to {job.order.contact_email}.")
+    except Exception as e:
+        st.error(f"Report generated, but delivery to the customer failed: {e}. Download the PDF below and send it manually.")
+    finally:
+        st.session_state[f"delivered_{job.order.id}"] = True
+
+
+def _render_pending_orders() -> None:
+    """Shows WorkflowIQ orders paid for but not yet run (see
+    payments/app/fulfillment.py::_write_workflowiq_run), so the operator
+    knows what's owed and can tie a run to the right customer for delivery."""
+    try:
+        orders = list_pending_orders()
+    except Exception as e:
+        st.warning(f"Couldn't load pending orders: {e}")
+        return
+
+    if not orders:
+        st.caption("No pending WorkflowIQ orders.")
+        return
+
+    st.subheader(f"Pending orders ({len(orders)})")
+    labels = ["— run without linking to an order —"] + [
+        f"{o.contact_email} · {o.report_type} · {o.payment_id}" for o in orders
+    ]
+    choice = st.selectbox("Run this analysis for:", labels, key="pending_order_choice")
+    if choice != labels[0]:
+        st.session_state["selected_order"] = orders[labels.index(choice) - 1]
+    else:
+        st.session_state.pop("selected_order", None)
+
+    st.divider()
+
+
 def _launch(sops: list[SopInput]) -> None:
     """Kick off the analysis on a background thread and switch into polling mode."""
     st.session_state["job"] = start_job(sops)
+    st.session_state["job"].order = st.session_state.get("selected_order")
     st.rerun()
 
 
@@ -123,6 +178,9 @@ def _poll_and_display() -> None:
     log_run(job.sops, status="Complete", result=result, pdf_path=pdf_path)
 
     st.success("Analysis complete!")
+
+    if job.order and not st.session_state.get(f"delivered_{job.order.id}"):
+        _deliver_to_order(job, pdf_path, result)
 
     with open(pdf_path, "rb") as f:
         st.download_button(

@@ -5,10 +5,11 @@ google-auth-oauthlib==1.2.0
 google-api-python-client==2.131.0
 reportlab==4.2.0
 graphviz==0.20.3
-pydantic==2.7.1
+pydantic==2.11.7
 pyairtable==2.3.2
 python-dotenv==1.0.1
 requests==2.32.3
+supabase==2.31.0
 # pin transitive dependencies for reproducibility
 certifi>=2024.2.2
 urllib3>=2.2.1

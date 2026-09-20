@@ -34,7 +34,12 @@ create table if not exists workflowiq_runs (
     sops_analysed integer not null default 0,
     automation_opportunities_found integer not null default 0,
     pdf_filename text not null default '',
-    report_type text not null default 'Single-SOP'
+    report_type text not null default 'Single-SOP',
+    -- "Pending" from the moment a WorkflowIQ product is purchased until staff
+    -- runs the report and the tool marks it "Complete" (see workflowiq/app/ui.py).
+    status text not null default 'Pending',
+    contact_email text not null default '',
+    payment_id text not null default ''
 );
 
 create index if not exists idx_clients_dashboard_token on clients(dashboard_token);

@@ -20,6 +20,8 @@ log = logging.getLogger("payments.fulfillment")
 QUEUE_PATH = Path(os.environ.get("FULFILLMENT_QUEUE_PATH", "/app/data/pending_orders.jsonl"))
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
+WORKFLOWIQ_ORDER_WEBHOOK_URL = os.environ.get("WORKFLOWIQ_ORDER_WEBHOOK_URL", "")
+WORKFLOWIQ_ORDER_WEBHOOK_SECRET = os.environ.get("WORKFLOWIQ_ORDER_WEBHOOK_SECRET", "")
 
 
 def _extract_company_name(payment: dict) -> str:
@@ -53,12 +55,20 @@ def fulfill_order(payment: dict) -> None:
     order = _extract_order_details(payment)
     log.info("Fulfilling order: %s", order)
 
+    product = get_product(order["product_id"]) if order.get("product_id") else None
+
     try:
-        _write_to_supabase(order)
+        if product and product.category == "workflowiq_report":
+            _write_workflowiq_run(order, product)
+        else:
+            _write_to_supabase(order)
         log.info("Order %s fulfilled directly in Supabase", order["payment_id"])
     except Exception as e:
         log.error("Supabase fulfillment failed (%s) - queueing order %s for replay", e, order["payment_id"])
         _queue_order(order)
+
+    if product and product.category == "workflowiq_report":
+        _notify_workflowiq_order(order, product)
 
 
 def _write_to_supabase(order: dict) -> None:
@@ -98,6 +108,66 @@ def _write_to_supabase(order: dict) -> None:
             "dashboard_token": secrets.token_urlsafe(16),
             "call_pin": f"{secrets.randbelow(10000):04d}",
         }).execute()
+
+
+def _write_workflowiq_run(order: dict, product) -> None:
+    """Record a pending WorkflowIQ order so staff can see it needs running and
+    the dashboard can show "Pending" instead of nothing. Mirrors _write_to_supabase's
+    match-by-email approach, but client_id is optional here - a first-time
+    WorkflowIQ buyer may not have a clients row yet (see schema migration
+    that dropped client_id's NOT NULL constraint on workflowiq_runs)."""
+    if not (SUPABASE_URL and SUPABASE_SERVICE_KEY):
+        raise RuntimeError("Supabase env vars not fully configured")
+
+    from supabase import create_client
+    client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
+    existing = (
+        client.table("clients")
+        .select("id")
+        .eq("contact_email", order["buyer_email"])
+        .limit(1)
+        .execute()
+    )
+    client_id = existing.data[0]["id"] if existing.data else None
+
+    client.table("workflowiq_runs").insert({
+        "client_id": client_id,
+        "process_names": "",
+        "sops_analysed": 0,
+        "automation_opportunities_found": 0,
+        "pdf_filename": "",
+        "report_type": product.name,
+        "status": "Pending",
+        "contact_email": order["buyer_email"],
+        "payment_id": order["payment_id"],
+    }).execute()
+
+
+def _notify_workflowiq_order(order: dict, product) -> None:
+    """Best-effort alert to staff that a WorkflowIQ order needs to be run
+    manually in the internal tool (see workflowiq/app/ui.py). Failure here
+    must never block fulfillment - the order is already recorded in Supabase
+    by _write_workflowiq_run regardless of whether this notification succeeds."""
+    if not WORKFLOWIQ_ORDER_WEBHOOK_URL:
+        log.warning("WORKFLOWIQ_ORDER_WEBHOOK_URL not configured - skipping staff notification for order %s", order["payment_id"])
+        return
+
+    import requests
+    try:
+        requests.post(
+            WORKFLOWIQ_ORDER_WEBHOOK_URL,
+            headers={"x-webhook-secret": WORKFLOWIQ_ORDER_WEBHOOK_SECRET, "Content-Type": "application/json"},
+            json={
+                "product_name": product.name,
+                "company_name": order.get("company_name", ""),
+                "buyer_email": order["buyer_email"],
+                "payment_id": order["payment_id"],
+            },
+            timeout=10,
+        )
+    except Exception as e:
+        log.error("WorkflowIQ order notification failed for %s: %s", order["payment_id"], e)
 
 
 def _queue_order(order: dict) -> None:

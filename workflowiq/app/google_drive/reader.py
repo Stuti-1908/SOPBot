@@ -7,7 +7,7 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 SCOPES = [
-    "https://www.googleapis.com/auth/drive.readonly",
+    "https://www.googleapis.com/auth/drive",
     "https://www.googleapis.com/auth/documents.readonly",
 ]
 
@@ -38,6 +38,26 @@ def fetch_sop_from_drive(url: str) -> str:
 
     doc = docs.documents().get(documentId=doc_id).execute()
     return _extract_text(doc)
+
+
+def upload_pdf_public(pdf_path: str, name: str) -> str:
+    """Uploads a PDF to Drive, makes it link-shareable, and returns a direct
+    download URL. Mirrors the sharing pattern already proven in the SOPBot
+    voice pipeline (n8n's "Share Doc (Anyone Reader)" nodes) - same
+    role: 'reader', type: 'anyone' permission, just via the Drive API
+    directly instead of an HTTP node."""
+    from googleapiclient.http import MediaFileUpload
+
+    creds = _build_credentials()
+    drive = build("drive", "v3", credentials=creds, cache_discovery=False)
+
+    media = MediaFileUpload(pdf_path, mimetype="application/pdf")
+    file = drive.files().create(body={"name": name}, media_body=media, fields="id").execute()
+    file_id = file["id"]
+
+    drive.permissions().create(fileId=file_id, body={"role": "reader", "type": "anyone"}).execute()
+
+    return f"https://drive.google.com/uc?export=download&id={file_id}"
 
 
 def _extract_text(doc: dict) -> str:
