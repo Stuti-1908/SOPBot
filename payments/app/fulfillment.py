@@ -22,6 +22,10 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 WORKFLOWIQ_ORDER_WEBHOOK_URL = os.environ.get("WORKFLOWIQ_ORDER_WEBHOOK_URL", "")
 WORKFLOWIQ_ORDER_WEBHOOK_SECRET = os.environ.get("WORKFLOWIQ_ORDER_WEBHOOK_SECRET", "")
+CUSTOMER_WELCOME_WEBHOOK_URL = os.environ.get("CUSTOMER_WELCOME_WEBHOOK_URL", "")
+CUSTOMER_WELCOME_WEBHOOK_SECRET = os.environ.get("CUSTOMER_WELCOME_WEBHOOK_SECRET", "")
+WELCOME_EMAIL_FROM = os.environ.get("WELCOME_EMAIL_FROM", "")
+SOPBOT_CALL_NUMBER = os.environ.get("SOPBOT_CALL_NUMBER", "+1 903-626-7053")
 
 
 def _extract_company_name(payment: dict) -> str:
@@ -61,7 +65,8 @@ def fulfill_order(payment: dict) -> None:
         if product and product.category == "workflowiq_report":
             _write_workflowiq_run(order, product)
         else:
-            _write_to_supabase(order)
+            account = _write_to_supabase(order)
+            _notify_customer_welcome(order, account)
         log.info("Order %s fulfilled directly in Supabase", order["payment_id"])
     except Exception as e:
         log.error("Supabase fulfillment failed (%s) - queueing order %s for replay", e, order["payment_id"])
@@ -71,7 +76,10 @@ def fulfill_order(payment: dict) -> None:
         _notify_workflowiq_order(order, product)
 
 
-def _write_to_supabase(order: dict) -> None:
+def _write_to_supabase(order: dict) -> dict:
+    """Returns the resulting clients row (dashboard_token/call_pin included)
+    so the caller can send the customer their access details - see
+    _notify_customer_welcome."""
     if not (SUPABASE_URL and SUPABASE_SERVICE_KEY):
         raise RuntimeError("Supabase env vars not fully configured")
 
@@ -83,7 +91,7 @@ def _write_to_supabase(order: dict) -> None:
 
     existing = (
         client.table("clients")
-        .select("id, sop_pack_size, client_name")
+        .select("id, sop_pack_size, client_name, dashboard_token, call_pin")
         .eq("contact_email", order["buyer_email"])
         .limit(1)
         .execute()
@@ -96,10 +104,11 @@ def _write_to_supabase(order: dict) -> None:
         # shouldn't blank it out if this order's field was left empty.
         if order.get("company_name") and not existing.data[0].get("client_name"):
             update["client_name"] = order["company_name"]
-        client.table("clients").update(update).eq("id", client_id).execute()
+        res = client.table("clients").update(update).eq("id", client_id).execute()
+        return res.data[0]
     else:
         import secrets
-        client.table("clients").insert({
+        res = client.table("clients").insert({
             "contact_email": order["buyer_email"],
             "client_name": order.get("company_name", ""),
             "status": "Active",
@@ -108,6 +117,7 @@ def _write_to_supabase(order: dict) -> None:
             "dashboard_token": secrets.token_urlsafe(16),
             "call_pin": f"{secrets.randbelow(10000):04d}",
         }).execute()
+        return res.data[0]
 
 
 def _write_workflowiq_run(order: dict, product) -> None:
@@ -142,6 +152,37 @@ def _write_workflowiq_run(order: dict, product) -> None:
         "contact_email": order["buyer_email"],
         "payment_id": order["payment_id"],
     }).execute()
+
+
+def _notify_customer_welcome(order: dict, account: dict) -> None:
+    """Sends the buyer their dashboard link/PIN right after a SOPBot pack
+    purchase. Without this, a paying customer has no way to find their
+    dashboard - the checkout success page promises "access details
+    shortly" but nothing used to deliver on that promise until now.
+
+    Best-effort: failure here must never undo the Supabase write above,
+    since the account itself is already correctly provisioned regardless
+    of whether this email goes out."""
+    if not CUSTOMER_WELCOME_WEBHOOK_URL:
+        log.warning("CUSTOMER_WELCOME_WEBHOOK_URL not configured - skipping welcome email for %s", order["payment_id"])
+        return
+
+    import requests
+    try:
+        requests.post(
+            CUSTOMER_WELCOME_WEBHOOK_URL,
+            headers={"x-webhook-secret": CUSTOMER_WELCOME_WEBHOOK_SECRET, "Content-Type": "application/json"},
+            json={
+                "buyer_email": order["buyer_email"],
+                "from_email": WELCOME_EMAIL_FROM,
+                "dashboard_token": account.get("dashboard_token", ""),
+                "call_pin": account.get("call_pin", ""),
+                "call_number": SOPBOT_CALL_NUMBER,
+            },
+            timeout=10,
+        )
+    except Exception as e:
+        log.error("Customer welcome email failed for %s: %s", order["payment_id"], e)
 
 
 def _notify_workflowiq_order(order: dict, product) -> None:
@@ -193,7 +234,8 @@ def replay_queued_orders() -> tuple[int, int]:
             continue
         order = json.loads(line)
         try:
-            _write_to_supabase(order)
+            account = _write_to_supabase(order)
+            _notify_customer_welcome(order, account)
             succeeded += 1
         except Exception as e:
             log.error("Replay failed for order %s: %s", order.get("payment_id"), e)
