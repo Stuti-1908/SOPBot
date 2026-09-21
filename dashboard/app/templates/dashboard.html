@@ -1,6 +1,10 @@
 {% extends "_base.html" %}
 {% block title %}Welcome back, {{ account.client_name }}{% endblock %}
 {% block content %}
+{% if account.status == "Refunded" %}
+<h1>Account access suspended</h1>
+<p class="badge-warn">This account was refunded, so dashboard access and call-in credits are currently suspended. If this looks wrong, contact support.</p>
+{% else %}
 <h1>Welcome back, {{ account.client_name }}</h1>
 
 {% if account.status != "Active" %}
@@ -90,5 +94,6 @@
   </div>
   {% endfor %}
 </div>
+{% endif %}
 {% endif %}
 {% endblock %}

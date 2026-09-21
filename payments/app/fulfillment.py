@@ -28,6 +28,8 @@ WELCOME_EMAIL_FROM = os.environ.get("WELCOME_EMAIL_FROM", "")
 SOPBOT_CALL_NUMBER = os.environ.get("SOPBOT_CALL_NUMBER", "+1 903-626-7053")
 FULFILLMENT_ALERT_WEBHOOK_URL = os.environ.get("FULFILLMENT_ALERT_WEBHOOK_URL", "")
 FULFILLMENT_ALERT_WEBHOOK_SECRET = os.environ.get("FULFILLMENT_ALERT_WEBHOOK_SECRET", "")
+REVOKE_ACCESS_WEBHOOK_URL = os.environ.get("REVOKE_ACCESS_WEBHOOK_URL", "")
+REVOKE_ACCESS_WEBHOOK_SECRET = os.environ.get("REVOKE_ACCESS_WEBHOOK_SECRET", "")
 
 
 def _extract_company_name(payment: dict) -> str:
@@ -217,6 +219,42 @@ def _notify_workflowiq_order(order: dict, product) -> None:
         )
     except Exception as e:
         log.error("WorkflowIQ order notification failed for %s: %s", order["payment_id"], e)
+
+
+def revoke_client_access(buyer_email: str, reason: str) -> None:
+    """Called when Stripe reports a refund or dispute (see main.py's
+    /webhook/stripe handler for charge.refunded / charge.dispute.created).
+
+    Updates Supabase directly (this service already has that dependency),
+    and fires a webhook so n8n can update the matching Airtable Clients
+    row's Status field too - the voice pipeline's Company Router primarily
+    gates on Airtable, not Supabase, so both must be updated or a refunded
+    customer could still successfully call in and consume credits."""
+    if SUPABASE_URL and SUPABASE_SERVICE_KEY:
+        try:
+            from supabase import create_client
+            client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+            client.table("clients").update({"status": "Refunded"}).eq("contact_email", buyer_email).execute()
+            log.info("Revoked Supabase access for %s (%s)", buyer_email, reason)
+        except Exception as e:
+            log.error("Failed to revoke Supabase access for %s: %s", buyer_email, e)
+    else:
+        log.warning("Supabase env vars not configured - cannot revoke access for %s", buyer_email)
+
+    if not REVOKE_ACCESS_WEBHOOK_URL:
+        log.warning("REVOKE_ACCESS_WEBHOOK_URL not configured - Airtable Status not updated for %s", buyer_email)
+        return
+
+    import requests
+    try:
+        requests.post(
+            REVOKE_ACCESS_WEBHOOK_URL,
+            headers={"x-webhook-secret": REVOKE_ACCESS_WEBHOOK_SECRET, "Content-Type": "application/json"},
+            json={"buyer_email": buyer_email, "reason": reason},
+            timeout=10,
+        )
+    except Exception as e:
+        log.error("Airtable access-revocation webhook failed for %s: %s", buyer_email, e)
 
 
 def _alert_fulfillment_failure(order: dict, error: Exception) -> None:

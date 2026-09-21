@@ -17,7 +17,7 @@ import stripe
 from flask import Flask, request, jsonify, redirect, render_template
 
 from app.products import get_product, CATALOG
-from app.fulfillment import fulfill_order
+from app.fulfillment import fulfill_order, revoke_client_access
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("payments")
@@ -134,15 +134,35 @@ def stripe_webhook():
 
     event_type = event.get("type", "")
 
-    if event_type != "checkout.session.completed":
-        return jsonify(status="ignored", type=event_type), 200
+    if event_type == "checkout.session.completed":
+        session = event.get("data", {}).get("object", {})
+        if session.get("payment_status") != "paid":
+            return jsonify(status="ignored", payment_status=session.get("payment_status")), 200
+        fulfill_order(session)
+        return jsonify(status="processed"), 200
 
-    session = event.get("data", {}).get("object", {})
-    if session.get("payment_status") != "paid":
-        return jsonify(status="ignored", payment_status=session.get("payment_status")), 200
+    if event_type == "charge.refunded":
+        charge = event.get("data", {}).get("object", {})
+        email = (charge.get("billing_details") or {}).get("email", "")
+        if email:
+            revoke_client_access(email, reason="refunded")
+        return jsonify(status="processed"), 200
 
-    fulfill_order(session)
-    return jsonify(status="processed"), 200
+    if event_type == "charge.dispute.created":
+        dispute = event.get("data", {}).get("object", {})
+        charge_id = dispute.get("charge", "")
+        email = ""
+        if charge_id:
+            try:
+                charge = stripe.Charge.retrieve(charge_id)
+                email = (charge.get("billing_details") or {}).get("email", "")
+            except Exception as e:
+                log.error("Could not retrieve charge %s for dispute: %s", charge_id, e)
+        if email:
+            revoke_client_access(email, reason="disputed")
+        return jsonify(status="processed"), 200
+
+    return jsonify(status="ignored", type=event_type), 200
 
 
 if __name__ == "__main__":
