@@ -16,11 +16,14 @@ outbound 465 but allows 587."""
 from __future__ import annotations
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 SMTP_HOST = os.environ.get("SMTP_HOST", "mail.thesopbot.com")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
 SMTP_USER = os.environ.get("SMTP_USER", "support@thesopbot.com")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+
+_TEMPLATES_DIR = Path(__file__).parent / "email_templates"
 
 
 @dataclass
@@ -79,15 +82,14 @@ def email_report_to_customer(contact_email: str, pdf_path: str) -> None:
     import smtplib
     from email.message import EmailMessage
 
+    html = (_TEMPLATES_DIR / "report_ready_email.html").read_text(encoding="utf-8")
+
     msg = EmailMessage()
     msg["Subject"] = "Your WorkflowIQ report is ready"
     msg["From"] = SMTP_USER
     msg["To"] = contact_email
     msg.set_content("Your WorkflowIQ process optimization report is attached.")
-    msg.add_alternative(
-        "<p>Your WorkflowIQ process optimization report is ready - see the attached PDF.</p>",
-        subtype="html",
-    )
+    msg.add_alternative(html, subtype="html")
 
     with open(pdf_path, "rb") as f:
         msg.add_attachment(

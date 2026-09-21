@@ -164,6 +164,24 @@ def _write_workflowiq_run(order: dict, product) -> None:
     }).execute()
 
 
+_TEMPLATES_DIR = Path(__file__).parent / "email_templates"
+
+
+def _render_welcome_email_html(account: dict) -> str:
+    """Renders the branded welcome email in Python rather than building it
+    as an n8n expression string - the n8n JS-expression approach broke
+    repeatedly on quote/escaping collisions between the outer expression
+    string and the HTML's own quoted attributes. Rendering here means n8n
+    just forwards whatever HTML it's given, no string surgery involved."""
+    template = (_TEMPLATES_DIR / "welcome_email.html").read_text(encoding="utf-8")
+    dashboard_url = f"https://dashboard.thesopbot.com/?token={account.get('dashboard_token', '')}"
+    return template.format(
+        call_number=SOPBOT_CALL_NUMBER,
+        call_pin=account.get("call_pin", ""),
+        dashboard_url=dashboard_url,
+    )
+
+
 def _notify_customer_welcome(order: dict, account: dict) -> None:
     """Sends the buyer their dashboard link/PIN right after a SOPBot pack
     purchase. Without this, a paying customer has no way to find their
@@ -177,6 +195,8 @@ def _notify_customer_welcome(order: dict, account: dict) -> None:
         log.warning("CUSTOMER_WELCOME_WEBHOOK_URL not configured - skipping welcome email for %s", order["payment_id"])
         return
 
+    html = _render_welcome_email_html(account)
+
     import requests
     try:
         requests.post(
@@ -185,9 +205,8 @@ def _notify_customer_welcome(order: dict, account: dict) -> None:
             json={
                 "buyer_email": order["buyer_email"],
                 "from_email": WELCOME_EMAIL_FROM,
-                "dashboard_token": account.get("dashboard_token", ""),
-                "call_pin": account.get("call_pin", ""),
-                "call_number": SOPBOT_CALL_NUMBER,
+                "subject": "Welcome to SOPBot — your dashboard is ready",
+                "html": html,
             },
             timeout=10,
         )
