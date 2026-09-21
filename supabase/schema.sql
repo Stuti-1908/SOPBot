@@ -45,3 +45,17 @@ create table if not exists workflowiq_runs (
 create index if not exists idx_clients_dashboard_token on clients(dashboard_token);
 create index if not exists idx_calls_log_client_id on calls_log(client_id);
 create index if not exists idx_workflowiq_runs_client_id on workflowiq_runs(client_id);
+
+-- Atomic credit deduction: called once per successfully completed, matched
+-- call (see the n8n node "18e. Increment Credit Used", which runs right
+-- after a calls_log row is inserted). A plain read-then-write from n8n
+-- would race under concurrent calls for the same client; this update
+-- happens in a single statement so it can't lose a decrement.
+create or replace function increment_sop_credits_used(client_id_input uuid)
+returns void
+language sql
+as $$
+  update clients
+  set sop_credits_used = sop_credits_used + 1
+  where id = client_id_input;
+$$;

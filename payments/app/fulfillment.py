@@ -26,6 +26,8 @@ CUSTOMER_WELCOME_WEBHOOK_URL = os.environ.get("CUSTOMER_WELCOME_WEBHOOK_URL", ""
 CUSTOMER_WELCOME_WEBHOOK_SECRET = os.environ.get("CUSTOMER_WELCOME_WEBHOOK_SECRET", "")
 WELCOME_EMAIL_FROM = os.environ.get("WELCOME_EMAIL_FROM", "")
 SOPBOT_CALL_NUMBER = os.environ.get("SOPBOT_CALL_NUMBER", "+1 903-626-7053")
+FULFILLMENT_ALERT_WEBHOOK_URL = os.environ.get("FULFILLMENT_ALERT_WEBHOOK_URL", "")
+FULFILLMENT_ALERT_WEBHOOK_SECRET = os.environ.get("FULFILLMENT_ALERT_WEBHOOK_SECRET", "")
 
 
 def _extract_company_name(payment: dict) -> str:
@@ -71,6 +73,12 @@ def fulfill_order(payment: dict) -> None:
     except Exception as e:
         log.error("Supabase fulfillment failed (%s) - queueing order %s for replay", e, order["payment_id"])
         _queue_order(order)
+        # The on-disk queue is best-effort only - on Vercel's serverless
+        # runtime the filesystem isn't guaranteed to persist between
+        # invocations, so replay_queued_orders() may never see this order.
+        # An immediate alert is the real safety net: staff can look up the
+        # payment in Stripe's dashboard and fulfill it by hand if needed.
+        _alert_fulfillment_failure(order, e)
 
     if product and product.category == "workflowiq_report":
         _notify_workflowiq_order(order, product)
@@ -211,10 +219,46 @@ def _notify_workflowiq_order(order: dict, product) -> None:
         log.error("WorkflowIQ order notification failed for %s: %s", order["payment_id"], e)
 
 
+def _alert_fulfillment_failure(order: dict, error: Exception) -> None:
+    """Fires immediately when a Supabase write fails during fulfillment,
+    since the on-disk queue this used to rely on alone doesn't reliably
+    survive on Vercel's serverless runtime (see fulfill_order). Staff can
+    look the payment up in Stripe's dashboard and fulfill it by hand."""
+    if not FULFILLMENT_ALERT_WEBHOOK_URL:
+        log.warning("FULFILLMENT_ALERT_WEBHOOK_URL not configured - cannot alert on fulfillment failure for %s", order["payment_id"])
+        return
+
+    import requests
+    try:
+        requests.post(
+            FULFILLMENT_ALERT_WEBHOOK_URL,
+            headers={"x-webhook-secret": FULFILLMENT_ALERT_WEBHOOK_SECRET, "Content-Type": "application/json"},
+            json={
+                "payment_id": order["payment_id"],
+                "buyer_email": order["buyer_email"],
+                "company_name": order.get("company_name", ""),
+                "product_id": order.get("product_id", ""),
+                "error": str(error),
+            },
+            timeout=10,
+        )
+    except Exception as e:
+        log.error("Fulfillment-failure alert itself failed for %s: %s", order["payment_id"], e)
+
+
 def _queue_order(order: dict) -> None:
-    QUEUE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with open(QUEUE_PATH, "a") as f:
-        f.write(json.dumps(order) + "\n")
+    """Best-effort local backup of a failed order. On Vercel's serverless
+    runtime this filesystem is usually unwritable/ephemeral, so this can
+    legitimately fail - that must never crash the webhook handler (which
+    would make Stripe think the whole request failed and retry it). The
+    real safety net for a fulfillment failure is _alert_fulfillment_failure,
+    called unconditionally regardless of whether this queue write works."""
+    try:
+        QUEUE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(QUEUE_PATH, "a") as f:
+            f.write(json.dumps(order) + "\n")
+    except Exception as e:
+        log.warning("Could not write to local fulfillment queue (%s) - relying on the alert instead", e)
 
 
 def replay_queued_orders() -> tuple[int, int]:
