@@ -3,759 +3,69 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SOPBot</title>
+<title>SOPBot — Document processes and find what to automate</title>
+<link rel="stylesheet" href="assets/style.css">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Work+Sans:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap');
-
-  :root {
-    --ground: #FAF6EF;
-    --ground-raised: #F3ECDF;
-    --ink: #241F1A;
-    --ink-soft: #5C5348;
-    --ink-faint: #9B9184;
-    --accent: #C1602A;
-    --accent-soft: #E8DDCC;
-    --confirm: #5E7C5A;
-    --rule: #E3D9C6;
-    --mono-bg: #241F1A;
-    --mono-fg: #E8DDCC;
-    --shadow: rgba(36, 31, 26, 0.08);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --ground: #1C1A17;
-      --ground-raised: #262220;
-      --ink: #F3EDE4;
-      --ink-soft: #C9BFB2;
-      --ink-faint: #837A6E;
-      --accent: #E2934F;
-      --accent-soft: #3A2F24;
-      --confirm: #8FB08A;
-      --rule: #3A342C;
-      --mono-bg: #12100E;
-      --mono-fg: #E2934F;
-      --shadow: rgba(0, 0, 0, 0.35);
-    }
-  }
-
-  :root[data-theme="dark"] {
-    --ground: #1C1A17;
-    --ground-raised: #262220;
-    --ink: #F3EDE4;
-    --ink-soft: #C9BFB2;
-    --ink-faint: #837A6E;
-    --accent: #E2934F;
-    --accent-soft: #3A2F24;
-    --confirm: #8FB08A;
-    --rule: #3A342C;
-    --mono-bg: #12100E;
-    --mono-fg: #E2934F;
-    --shadow: rgba(0, 0, 0, 0.35);
-  }
-
-  * { box-sizing: border-box; }
-
-  body {
-    margin: 0;
-    background: var(--ground);
-    color: var(--ink);
-    font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  ::selection { background: var(--accent-soft); color: var(--ink); }
-
-  a { color: inherit; }
-
-  h1, h2, h3 {
-    font-family: 'Fraunces', Georgia, serif;
-    text-wrap: balance;
-    margin: 0;
-    line-height: 1.08;
-  }
-
-  .mono {
-    font-family: 'Space Mono', 'SF Mono', monospace;
-  }
-
-  .wrap {
-    max-width: 1120px;
-    margin: 0 auto;
-    padding: 0 32px;
-  }
-
-  /* ---------- Nav ---------- */
-  nav {
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    background: color-mix(in srgb, var(--ground) 88%, transparent);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--rule);
-  }
-  nav .wrap {
+  .hub {
+    min-height: calc(100vh - 68px);
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    height: 68px;
   }
-  .brand {
-    font-family: 'Fraunces', serif;
-    font-weight: 600;
-    font-size: 1.25rem;
-    letter-spacing: -0.01em;
-    display: flex;
-    align-items: baseline;
-    gap: 2px;
+  .hub-head {
+    text-align: center;
+    max-width: 680px;
+    margin: 0 auto 56px;
   }
-  .brand .dot { color: var(--accent); }
-  .nav-links {
-    display: flex;
-    gap: 32px;
-    font-size: 0.9rem;
-    color: var(--ink-soft);
-  }
-  .nav-links a { text-decoration: none; transition: color 0.15s; }
-  .nav-links a:hover { color: var(--ink); }
-  .nav-cta {
-    padding: 9px 20px;
-    background: var(--ink);
-    color: var(--ground);
-    border-radius: 3px;
-    font-size: 0.88rem;
-    font-weight: 500;
-    text-decoration: none;
-    white-space: nowrap;
-  }
-  @media (max-width: 720px) { .nav-links { display: none; } }
-
-  /* ---------- Hero ----------
-     header.hero and the inner .wrap.hero-grid are two different
-     elements - keep their rules on separate class names. They used to
-     both be "hero", which silently collided: the header's padding/grid
-     rules also landed on the inner .wrap div, cancelling its centering
-     and left padding (the bug that made the hero text run to the edge
-     of the viewport). */
-  header.hero {
-    padding: 96px 0 88px;
-  }
-  .hero-grid {
-    display: grid;
-    grid-template-columns: 1.05fr 0.95fr;
-    gap: 64px;
-    align-items: center;
-  }
-  @media (max-width: 900px) {
-    header.hero { padding: 56px 0 64px; }
-    .hero-grid { grid-template-columns: 1fr; gap: 48px; }
-  }
-
-  .eyebrow {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.78rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--accent);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-  .eyebrow::before {
-    content: "";
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-soft);
-  }
-
-  .hero h1 {
-    font-size: clamp(2.4rem, 4.4vw, 3.6rem);
-    font-weight: 500;
-    letter-spacing: -0.015em;
-  }
-  .hero h1 em {
-    font-style: italic;
-    color: var(--accent);
-  }
-
-  .hero-sub {
-    margin-top: 22px;
-    font-size: 1.12rem;
-    line-height: 1.6;
-    color: var(--ink-soft);
-    max-width: 46ch;
-  }
-
-  .hero-actions {
-    display: flex;
-    gap: 14px;
-    margin-top: 34px;
-    flex-wrap: wrap;
-  }
-  .btn-primary, .btn-ghost {
-    padding: 14px 26px;
-    border-radius: 3px;
-    font-size: 0.95rem;
-    font-weight: 500;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: transform 0.15s, background 0.15s;
-  }
-  .btn-primary {
-    background: var(--accent);
-    color: #FAF6EF;
-  }
-  .btn-primary:hover { transform: translateY(-1px); }
-  .btn-ghost {
-    background: transparent;
-    color: var(--ink);
-    border: 1px solid var(--rule);
-  }
-  .btn-ghost:hover { border-color: var(--ink-faint); }
-
-  .hero-note {
+  .hub-head h1 { font-size: clamp(2.2rem, 4vw, 3rem); font-weight: 500; }
+  .hub-head p {
     margin-top: 18px;
-    font-size: 0.85rem;
-    color: var(--ink-faint);
-    font-family: 'Space Mono', monospace;
-  }
-
-  /* ---------- Transcript demo ---------- */
-  .demo {
-    background: var(--mono-bg);
-    border-radius: 10px;
-    padding: 26px 24px;
-    box-shadow: 0 24px 60px -20px var(--shadow);
-    min-height: 380px;
-    display: flex;
-    flex-direction: column;
-  }
-  .demo-bar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 18px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid rgba(232, 221, 204, 0.12);
-  }
-  .demo-dot { width: 9px; height: 9px; border-radius: 50%; background: rgba(232, 221, 204, 0.25); }
-  .demo-label {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.72rem;
-    color: rgba(232, 221, 204, 0.5);
-    letter-spacing: 0.05em;
-    margin-left: 4px;
-  }
-  .demo-live {
-    margin-left: auto;
-    font-family: 'Space Mono', monospace;
-    font-size: 0.7rem;
-    color: var(--confirm);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .demo-live::before {
-    content: "";
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--confirm);
-    animation: pulse 1.6s ease-in-out infinite;
-  }
-  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
-
-  .transcript {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.86rem;
-    line-height: 1.85;
-    color: var(--mono-fg);
-    flex: 1;
-  }
-  .transcript .who {
-    color: rgba(232, 221, 204, 0.42);
-    margin-right: 8px;
-  }
-  .transcript .line { opacity: 0; animation: reveal 0.4s ease forwards; }
-  .transcript .cursor {
-    display: inline-block;
-    width: 7px; height: 1em;
-    background: var(--accent);
-    vertical-align: text-bottom;
-    animation: blink 1s step-end infinite;
-  }
-  @keyframes reveal { to { opacity: 1; } }
-  @keyframes blink { 50% { opacity: 0; } }
-
-  .demo-result {
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px solid rgba(232, 221, 204, 0.12);
-    opacity: 0;
-    animation: reveal 0.6s ease forwards;
-    animation-delay: 4.6s;
-  }
-  .demo-result-label {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.68rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--confirm);
-    margin-bottom: 8px;
-  }
-  .demo-result-title {
-    font-family: 'Fraunces', serif;
-    font-size: 1.05rem;
-    color: var(--mono-fg);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .transcript .line, .demo-result { animation: none; opacity: 1; }
-    .cursor, .demo-live::before { animation: none; }
-  }
-
-  /* ---------- Scroll reveal ---------- */
-  .reveal {
-    opacity: 0;
-    transform: translateY(22px);
-    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .reveal.in-view {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  .reveal-group .reveal:nth-child(1) { transition-delay: 0ms; }
-  .reveal-group .reveal:nth-child(2) { transition-delay: 90ms; }
-  .reveal-group .reveal:nth-child(3) { transition-delay: 180ms; }
-  .reveal-group .reveal:nth-child(4) { transition-delay: 270ms; }
-  @media (prefers-reduced-motion: reduce) {
-    .reveal { opacity: 1; transform: none; transition: none; }
-  }
-
-  .nav-links a.active { color: var(--ink); }
-  .nav-links a { position: relative; }
-  .nav-links a.active::after {
-    content: "";
-    position: absolute;
-    left: 0; right: 0; bottom: -22px;
-    height: 2px;
-    background: var(--accent);
-  }
-
-  /* ---------- Logos / trust strip ---------- */
-  .trust {
-    padding: 28px 0;
-    border-top: 1px solid var(--rule);
-    border-bottom: 1px solid var(--rule);
-  }
-  .trust .wrap {
-    display: flex;
-    align-items: center;
-    gap: 40px;
-    flex-wrap: wrap;
-    justify-content: space-between;
-  }
-  .trust-line {
-    font-size: 0.82rem;
-    color: var(--ink-faint);
-    font-family: 'Space Mono', monospace;
-  }
-  .trust-stats {
-    display: flex;
-    gap: 44px;
-  }
-  .trust-stat { text-align: left; }
-  .trust-stat b {
-    font-family: 'Fraunces', serif;
-    font-size: 1.5rem;
-    font-weight: 500;
-    color: var(--ink);
-    display: block;
-  }
-  .trust-stat span {
-    font-size: 0.78rem;
-    color: var(--ink-faint);
-  }
-
-  /* ---------- How it works ---------- */
-  .section {
-    padding: 96px 0;
-  }
-  .section-head {
-    max-width: 640px;
-    margin-bottom: 56px;
-  }
-  .section-eyebrow {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.75rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 12px;
-    display: block;
-  }
-  .section h2 {
-    font-size: clamp(1.8rem, 3vw, 2.4rem);
-    font-weight: 500;
-  }
-  .section-lede {
-    margin-top: 14px;
-    color: var(--ink-soft);
-    font-size: 1.05rem;
-    line-height: 1.6;
-  }
-
-  .steps {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1px;
-    background: var(--rule);
-    border: 1px solid var(--rule);
-    border-radius: 8px;
-    overflow: hidden;
-  }
-  @media (max-width: 900px) { .steps { grid-template-columns: 1fr 1fr; } }
-  @media (max-width: 560px) { .steps { grid-template-columns: 1fr; } }
-
-  .step {
-    background: var(--ground);
-    padding: 32px 26px;
-    transition: background 0.25s ease, transform 0.25s ease;
-  }
-  .step:hover {
-    background: var(--ground-raised);
-    transform: translateY(-3px);
-  }
-  .step:hover .step-num { color: var(--accent); }
-  .step-num { transition: color 0.25s ease; }
-  .step-num {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.78rem;
-    color: var(--ink-faint);
-  }
-  .step h3 {
-    font-size: 1.15rem;
-    font-weight: 500;
-    margin-top: 14px;
-  }
-  .step p {
-    margin-top: 10px;
-    font-size: 0.92rem;
-    line-height: 1.55;
-    color: var(--ink-soft);
-  }
-
-  /* ---------- Prep sheet callout ---------- */
-  .callout {
-    background: var(--ground-raised);
-    border: 1px solid var(--rule);
-    border-radius: 10px;
-    padding: 40px;
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 28px;
-    align-items: start;
-  }
-  @media (max-width: 700px) { .callout { grid-template-columns: 1fr; } }
-  .callout-icon {
-    width: 48px; height: 48px;
-    border-radius: 50%;
-    background: var(--accent-soft);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--accent);
-    flex-shrink: 0;
-  }
-  .callout h3 {
-    font-size: 1.25rem;
-    font-weight: 500;
-  }
-  .callout p {
-    margin-top: 10px;
+    font-size: 1.08rem;
     color: var(--ink-soft);
     line-height: 1.6;
-    max-width: 60ch;
   }
-  .callout-questions {
-    margin-top: 18px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .qchip {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.78rem;
-    padding: 6px 12px;
-    background: var(--ground);
-    border: 1px solid var(--rule);
-    border-radius: 20px;
-    color: var(--ink-soft);
-  }
-
-  /* ---------- Pricing ---------- */
-  .pricing-toggle {
-    display: inline-flex;
-    background: var(--ground-raised);
-    border: 1px solid var(--rule);
-    border-radius: 30px;
-    padding: 4px;
-    margin-bottom: 40px;
-    font-size: 0.86rem;
-  }
-  .pricing-toggle button {
-    border: none;
-    background: none;
-    padding: 8px 20px;
-    border-radius: 24px;
-    cursor: pointer;
-    font-family: inherit;
-    font-size: 0.86rem;
-    color: var(--ink-soft);
-    font-weight: 500;
-    transition: background 0.15s, color 0.15s;
-  }
-  .pricing-toggle button.active {
-    background: var(--ink);
-    color: var(--ground);
-  }
-
-  .pricing-grid {
+  .hub-cards {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
   }
-  @media (max-width: 900px) { .pricing-grid { grid-template-columns: 1fr; } }
-
-  .plan {
+  @media (max-width: 760px) { .hub-cards { grid-template-columns: 1fr; } }
+  .hub-card {
+    display: block;
+    text-decoration: none;
     border: 1px solid var(--rule);
-    border-radius: 10px;
-    padding: 32px 28px;
-    background: var(--ground);
-    display: flex;
-    flex-direction: column;
+    border-radius: 12px;
+    padding: 40px 36px;
+    background: var(--ground-raised);
     transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   }
-  .plan:hover {
+  .hub-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 16px 40px -16px var(--shadow);
-    border-color: var(--ink-faint);
-  }
-  .plan.featured:hover { border-color: var(--accent); }
-  .plan.featured {
-    border-color: var(--accent);
-    background: var(--ground-raised);
-    position: relative;
-  }
-  .plan-tag {
-    position: absolute;
-    top: -12px;
-    left: 28px;
-    background: var(--accent);
-    color: #FAF6EF;
-    font-family: 'Space Mono', monospace;
-    font-size: 0.68rem;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    padding: 4px 10px;
-    border-radius: 20px;
-  }
-  .plan-name {
-    font-family: 'Fraunces', serif;
-    font-size: 1.3rem;
-    font-weight: 500;
-  }
-  .plan-desc {
-    margin-top: 6px;
-    font-size: 0.88rem;
-    color: var(--ink-soft);
-  }
-  .plan-price {
-    margin-top: 22px;
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-  }
-  .plan-price .amount {
-    font-family: 'Fraunces', serif;
-    font-size: 2.6rem;
-    font-weight: 500;
-  }
-  .plan-price .per {
-    font-size: 0.85rem;
-    color: var(--ink-faint);
-    font-family: 'Space Mono', monospace;
-  }
-  .plan-persop {
-    margin-top: 4px;
-    font-size: 0.8rem;
-    color: var(--ink-faint);
-    font-family: 'Space Mono', monospace;
-  }
-  .plan-cta {
-    display: block;
-    width: 100%;
-    margin-top: 24px;
-    text-align: center;
-    padding: 12px;
-    border-radius: 3px;
-    text-decoration: none;
-    font-family: inherit;
-    font-weight: 500;
-    font-size: 0.9rem;
-    border: 1px solid var(--rule);
-    background: var(--ground);
-    color: var(--ink);
-    cursor: pointer;
-  }
-  .plan.featured .plan-cta {
-    background: var(--accent);
-    color: #FAF6EF;
+    box-shadow: 0 20px 50px -20px var(--shadow);
     border-color: var(--accent);
   }
-  .plan-list {
-    list-style: none;
-    padding: 0;
-    margin: 24px 0 0;
-    font-size: 0.88rem;
-    color: var(--ink-soft);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    flex: 1;
-  }
-  .plan-list li { display: flex; gap: 8px; }
-  .plan-list li::before {
-    content: "";
-    width: 14px; height: 14px;
-    margin-top: 3px;
-    flex-shrink: 0;
-    background: var(--confirm);
-    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M13.5 4.5l-7 7-4-4' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M13.5 4.5l-7 7-4-4' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
-  }
-
-  .topup-note {
-    margin-top: 20px;
-    font-size: 0.86rem;
-    color: var(--ink-faint);
-    text-align: center;
-  }
-
-  #wiq-pricing { display: none; }
-  #wiq-pricing.active { display: grid; }
-  #sopbot-pricing.hidden { display: none; }
-
-  /* ---------- Upsell strip ---------- */
-  .upsell {
-    background: var(--mono-bg);
-    border-radius: 10px;
-    padding: 48px 44px;
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 32px;
-    align-items: center;
-  }
-  @media (max-width: 760px) { .upsell { grid-template-columns: 1fr; } }
-  .upsell-eyebrow {
+  .hub-card-eyebrow {
     font-family: 'Space Mono', monospace;
     font-size: 0.75rem;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--accent);
   }
-  .upsell h3 {
-    color: var(--mono-fg);
+  .hub-card h2 {
+    margin-top: 12px;
     font-size: 1.6rem;
     font-weight: 500;
+  }
+  .hub-card p {
     margin-top: 12px;
-  }
-  .upsell p {
-    color: color-mix(in srgb, var(--mono-fg) 65%, transparent);
-    margin-top: 10px;
-    max-width: 50ch;
-    line-height: 1.6;
-  }
-  .upsell .btn-primary { flex-shrink: 0; }
-
-  /* ---------- FAQ ---------- */
-  .faq {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1px;
-    background: var(--rule);
-    border: 1px solid var(--rule);
-    border-radius: 8px;
-    overflow: hidden;
-  }
-  @media (max-width: 760px) { .faq { grid-template-columns: 1fr; } }
-  details {
-    background: var(--ground);
-    padding: 22px 24px;
-  }
-  summary {
-    cursor: pointer;
-    font-weight: 500;
-    font-size: 0.98rem;
-    list-style: none;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-  }
-  summary::-webkit-details-marker { display: none; }
-  summary::after {
-    content: "+";
-    font-family: 'Space Mono', monospace;
-    color: var(--accent);
-    font-size: 1.1rem;
-    flex-shrink: 0;
-    transition: transform 0.2s;
-  }
-  details[open] summary::after { transform: rotate(45deg); }
-  details p {
-    margin: 14px 0 0;
-    font-size: 0.9rem;
     color: var(--ink-soft);
     line-height: 1.6;
   }
-
-  /* ---------- Final CTA ---------- */
-  .final-cta {
-    text-align: center;
-    padding: 100px 0 110px;
-  }
-  .final-cta h2 {
-    font-size: clamp(2rem, 4vw, 2.8rem);
+  .hub-card .hub-cta {
+    margin-top: 22px;
     font-weight: 500;
+    color: var(--accent);
+    font-size: 0.92rem;
   }
-  .final-cta .hero-actions { justify-content: center; }
-  .final-cta .hero-note { text-align: center; }
-
-  /* ---------- Footer ---------- */
-  footer {
-    border-top: 1px solid var(--rule);
-    padding: 40px 0;
-  }
-  footer .wrap {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-  footer .brand { font-size: 1rem; }
-  .footer-links {
-    display: flex;
-    gap: 24px;
-    font-size: 0.85rem;
-    color: var(--ink-faint);
-  }
-  .footer-links a { text-decoration: none; }
-  .footer-links a:hover { color: var(--ink-soft); }
 </style>
 </head>
 <body>
@@ -764,272 +74,35 @@
   <div class="wrap">
     <div class="brand">SOPBot<span class="dot">.</span></div>
     <div class="nav-links">
-      <a href="#how">How it works</a>
-      <a href="#pricing">Pricing</a>
-      <a href="#faq">FAQ</a>
+      <a href="sopbot.html">SOPBot</a>
+      <a href="workflowiq.html">WorkflowIQ</a>
     </div>
-    <a href="#pricing" class="nav-cta">Get started</a>
+    <a href="sopbot.html" class="nav-cta">Get started</a>
   </div>
 </nav>
 
-<header class="hero">
-  <div class="wrap hero-grid">
-    <div>
-      <div class="eyebrow">Now taking calls</div>
-      <h1>Turn your team's <em>tribal knowledge</em> into documented SOPs.</h1>
-      <p class="hero-sub">No meetings to schedule. No blank doc to stare at. Your team calls one number, talks through how they actually work, and a finished process document lands in your dashboard right after they hang up.</p>
-      <div class="hero-actions">
-        <a href="#pricing" class="btn-primary">Buy call credits →</a>
-        <a href="#how" class="btn-ghost">See how it works</a>
-      </div>
-      <div class="hero-note">15–30 min per call · no software for employees to install</div>
-    </div>
-
-    <div class="demo">
-      <div class="demo-bar">
-        <span class="demo-dot"></span><span class="demo-dot"></span><span class="demo-dot"></span>
-        <span class="demo-label">SOPBOT · LIVE CALL</span>
-        <span class="demo-live">recording</span>
-      </div>
-      <div class="transcript" id="transcript"></div>
-      <div class="demo-result">
-        <div class="demo-result-label">✓ SOP generated</div>
-        <div class="demo-result-title">Customer Refund Processing — v1</div>
-      </div>
-    </div>
-  </div>
-</header>
-
-<section class="trust">
+<section class="hub">
   <div class="wrap">
-    <div class="trust-line">BUILT FOR OPERATIONS TEAMS WHO ARE TIRED OF ASKING "WAIT, HOW DOES THAT WORK AGAIN?"</div>
-    <div class="trust-stats">
-      <div class="trust-stat"><b>~22 min</b><span>avg. call length</span></div>
-      <div class="trust-stat"><b>0</b><span>meetings scheduled</span></div>
-      <div class="trust-stat"><b>Instant</b><span>SOP delivery</span></div>
-    </div>
-  </div>
-</section>
-
-<section class="section" id="how">
-  <div class="wrap">
-    <div class="section-head reveal">
-      <span class="section-eyebrow">The process</span>
-      <h2>From phone call to filed SOP, automatically.</h2>
-      <p class="section-lede">No reviewer sits between your team and their documentation. Every step below happens without a human in the loop — including delivery.</p>
+    <div class="hub-head reveal">
+      <div class="eyebrow" style="justify-content: center;">by DadaAI</div>
+      <h1>Document how your team works. Then find what to automate.</h1>
+      <p>Two products, one goal: turn tribal knowledge into a real process library, then use it to find where you're losing time.</p>
     </div>
 
-    <div class="steps reveal-group">
-      <div class="step reveal">
-        <div class="step-num mono">01</div>
-        <h3>Buy a pack</h3>
-        <p>Pick a SOP pack sized to your team, pay upfront, and get a dashboard with your call-in number instantly.</p>
-      </div>
-      <div class="step reveal">
-        <div class="step-num mono">02</div>
-        <h3>Share the number</h3>
-        <p>Send it to whoever owns a process worth documenting. They call whenever they're free — no scheduling.</p>
-      </div>
-      <div class="step reveal">
-        <div class="step-num mono">03</div>
-        <h3>They talk, SOPBot listens</h3>
-        <p>One question at a time, at their pace, until the process is fully captured — then confirmed back to them.</p>
-      </div>
-      <div class="step reveal">
-        <div class="step-num mono">04</div>
-        <h3>It's in your dashboard</h3>
-        <p>The finished SOP lands the moment the call ends. Your library builds up, credit by credit.</p>
-      </div>
+    <div class="hub-cards reveal-group">
+      <a href="sopbot.html" class="hub-card reveal">
+        <div class="hub-card-eyebrow">Start here</div>
+        <h2>SOPBot</h2>
+        <p>Your team calls one number, talks through how they work, and a finished SOP lands in your dashboard right after they hang up. No meetings, no blank doc.</p>
+        <div class="hub-cta">Explore SOPBot →</div>
+      </a>
+      <a href="workflowiq.html" class="hub-card reveal">
+        <div class="hub-card-eyebrow">For teams with 2+ SOPs</div>
+        <h2>WorkflowIQ</h2>
+        <p>Reads your documented processes and flags exactly where time and money are leaking — with a scored list of what to automate first.</p>
+        <div class="hub-cta">Explore WorkflowIQ →</div>
+      </a>
     </div>
-  </div>
-</section>
-
-<section class="section" style="padding-top: 0;">
-  <div class="wrap">
-    <div class="callout reveal">
-      <div class="callout-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5a2 2 0 012-2h2.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.05 11.05 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-      </div>
-      <div>
-        <h3>Employees know what's coming — before they dial.</h3>
-        <p>Every call credit includes a shareable prep sheet, so your team walks in ready. No surprises, no dead air.</p>
-        <div class="callout-questions">
-          <span class="qchip">"What's the first thing you do?"</span>
-          <span class="qchip">"What tool do you use for that?"</span>
-          <span class="qchip">"What happens when it goes wrong?"</span>
-          <span class="qchip">"How do you know it's done?"</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="section" id="pricing">
-  <div class="wrap">
-    <div class="section-head reveal">
-      <span class="section-eyebrow">Pricing</span>
-      <h2>Pay for what you need documented — not a seat, not a subscription.</h2>
-      <p class="section-lede">SOPBot is sold as call credits, because the trigger is "we need this documented," not ongoing usage.</p>
-    </div>
-
-    <div class="pricing-toggle">
-      <button class="active" onclick="switchPricing('sopbot', this)">SOPBot packs</button>
-      <button onclick="switchPricing('wiq', this)">WorkflowIQ reports</button>
-    </div>
-
-    <div class="pricing-grid reveal-group" id="sopbot-pricing">
-      <div class="plan reveal">
-        <div class="plan-name">Starter</div>
-        <div class="plan-desc">For documenting one team's core processes.</div>
-        <div class="plan-price"><span class="amount">$199</span></div>
-        <div class="plan-persop">≈ $40 per SOP · 5 credits</div>
-        <ul class="plan-list">
-          <li>5 SOP call credits</li>
-          <li>Dashboard + call-in number</li>
-          <li>Shareable employee prep sheet</li>
-        </ul>
-        <form method="POST" action="https://sop-bot-h57s.vercel.app/checkout/sopbot_starter">
-          <button type="submit" class="plan-cta">Buy Starter</button>
-        </form>
-      </div>
-      <div class="plan featured reveal">
-        <span class="plan-tag">Most teams choose this</span>
-        <div class="plan-name">Team</div>
-        <div class="plan-desc">For documenting a full department's workflows.</div>
-        <div class="plan-price"><span class="amount">$499</span></div>
-        <div class="plan-persop">≈ $33 per SOP · 15 credits</div>
-        <ul class="plan-list">
-          <li>15 SOP call credits</li>
-          <li>Dashboard + call-in number</li>
-          <li>Shareable employee prep sheet</li>
-          <li>Priority credit top-ups</li>
-        </ul>
-        <form method="POST" action="https://sop-bot-h57s.vercel.app/checkout/sopbot_team">
-          <button type="submit" class="plan-cta">Buy Team</button>
-        </form>
-      </div>
-      <div class="plan reveal">
-        <div class="plan-name">Department</div>
-        <div class="plan-desc">For documenting across multiple functions at once.</div>
-        <div class="plan-price"><span class="amount">$899</span></div>
-        <div class="plan-persop">≈ $30 per SOP · 30 credits</div>
-        <ul class="plan-list">
-          <li>30 SOP call credits</li>
-          <li>Dashboard + call-in number</li>
-          <li>Shareable employee prep sheet</li>
-          <li>Priority credit top-ups</li>
-        </ul>
-        <form method="POST" action="https://sop-bot-h57s.vercel.app/checkout/sopbot_department">
-          <button type="submit" class="plan-cta">Buy Department</button>
-        </form>
-      </div>
-    </div>
-
-    <div class="pricing-grid reveal-group" id="wiq-pricing">
-      <div class="plan reveal">
-        <div class="plan-name">Single-SOP report</div>
-        <div class="plan-desc">Optimization analysis for one documented process.</div>
-        <div class="plan-price"><span class="amount">$99</span></div>
-        <div class="plan-persop">per report</div>
-        <ul class="plan-list">
-          <li>Redesigned process steps</li>
-          <li>Automation opportunities, scored</li>
-          <li>Flowchart + executive summary</li>
-        </ul>
-        <form method="POST" action="https://sop-bot-h57s.vercel.app/checkout/workflowiq_single">
-          <button type="submit" class="plan-cta">Run a report</button>
-        </form>
-      </div>
-      <div class="plan featured reveal">
-        <span class="plan-tag">Best for a full library</span>
-        <div class="plan-name">Multi-SOP report</div>
-        <div class="plan-desc">Cross-process analysis across up to 8 SOPs.</div>
-        <div class="plan-price"><span class="amount">$249</span></div>
-        <div class="plan-persop">per report, up to 8 SOPs</div>
-        <ul class="plan-list">
-          <li>Everything in Single-SOP</li>
-          <li>Shared bottlenecks across processes</li>
-          <li>Cross-process automation opportunities</li>
-        </ul>
-        <form method="POST" action="https://sop-bot-h57s.vercel.app/checkout/workflowiq_multi">
-          <button type="submit" class="plan-cta">Run a report</button>
-        </form>
-      </div>
-      <div class="plan reveal">
-        <div class="plan-name">Re-run</div>
-        <div class="plan-desc">Refresh a report after a process changes.</div>
-        <div class="plan-price"><span class="amount">$49</span></div>
-        <div class="plan-persop">per re-run</div>
-        <ul class="plan-list">
-          <li>Updated analysis on the latest SOP</li>
-          <li>New PDF, same process</li>
-        </ul>
-        <form method="POST" action="https://sop-bot-h57s.vercel.app/checkout/workflowiq_rerun">
-          <button type="submit" class="plan-cta">Re-run a report</button>
-        </form>
-      </div>
-    </div>
-
-    <div class="topup-note">Need one more? À la carte SOP top-ups are <strong style="color: var(--ink);">$49</strong> each, any time.</div>
-  </div>
-</section>
-
-<section class="section" style="padding-top: 0;">
-  <div class="wrap">
-    <div class="upsell reveal">
-      <div>
-        <div class="upsell-eyebrow">Once you have 2+ SOPs</div>
-        <h3>See where you're losing hours every week.</h3>
-        <p>WorkflowIQ reads your documented processes and flags exactly where time and money are leaking — with a scored list of what to automate first.</p>
-      </div>
-      <a href="#pricing" class="btn-primary">Run a WorkflowIQ report →</a>
-    </div>
-  </div>
-</section>
-
-<section class="section" id="faq">
-  <div class="wrap">
-    <div class="section-head reveal">
-      <span class="section-eyebrow">Questions</span>
-      <h2>Before you call.</h2>
-    </div>
-    <div class="faq">
-      <details open>
-        <summary>Do employees need to install anything?</summary>
-        <p>No. It's a phone call to a regular number. No app, no login, no calendar invite.</p>
-      </details>
-      <details>
-        <summary>What if they don't finish in one call?</summary>
-        <p>Most calls run 15–30 minutes. If something's cut short, they can simply call back and walk through it again from the start.</p>
-      </details>
-      <details>
-        <summary>Do credits expire?</summary>
-        <p>No. Buy a pack, use the credits whenever your team is ready — no clock running against you.</p>
-      </details>
-      <details>
-        <summary>Is WorkflowIQ included in a SOPBot pack?</summary>
-        <p>No — it's a separate, pay-per-report purchase, run once you have SOPs worth analyzing.</p>
-      </details>
-      <details>
-        <summary>What does a new hire need?</summary>
-        <p>Just more call credits. Top up à la carte at $49/SOP, or step up to the next pack.</p>
-      </details>
-      <details>
-        <summary>What if our process changes?</summary>
-        <p>Re-run WorkflowIQ on the updated SOP for $49 to get a fresh report against the new version.</p>
-      </details>
-    </div>
-  </div>
-</section>
-
-<section class="final-cta">
-  <div class="wrap">
-    <h2>Your team already knows how the work gets done.</h2>
-    <p class="hero-sub" style="margin: 18px auto 0; text-align: center;">Give them a phone number, not a template.</p>
-    <div class="hero-actions">
-      <a href="#pricing" class="btn-primary">Get your call-in number →</a>
-    </div>
-    <div class="hero-note">Starting at $199 for 5 SOPs</div>
   </div>
 </section>
 
@@ -1037,99 +110,14 @@
   <div class="wrap">
     <div class="brand">SOPBot<span class="dot">.</span></div>
     <div class="footer-links">
-      <a href="#how">How it works</a>
-      <a href="#pricing">Pricing</a>
-      <a href="#faq">FAQ</a>
+      <a href="sopbot.html">SOPBot</a>
+      <a href="workflowiq.html">WorkflowIQ</a>
     </div>
     <div class="footer-links">by DadaAI</div>
   </div>
 </footer>
 
-<script>
-  const lines = [
-    { who: 'BOT', text: "What's the very first thing you do when this process starts?" },
-    { who: 'YOU', text: "Customer emails in asking for a refund." },
-    { who: 'BOT', text: "Got it. What tool do you use to check if they're eligible?" },
-    { who: 'YOU', text: "I check Shopify — has to be within 30 days." },
-  ];
-
-  const el = document.getElementById('transcript');
-  let delay = 200;
-
-  lines.forEach((line, i) => {
-    const div = document.createElement('div');
-    div.className = 'line';
-    div.style.animationDelay = delay + 'ms';
-    div.innerHTML = `<span class="who">${line.who}</span>${line.text}` + (i === lines.length - 1 ? '<span class="cursor"></span>' : '');
-    el.appendChild(div);
-    delay += 950;
-  });
-</script>
-
-<script>
-  function switchPricing(which, btn) {
-    document.querySelectorAll('.pricing-toggle button').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const sop = document.getElementById('sopbot-pricing');
-    const wiq = document.getElementById('wiq-pricing');
-    if (which === 'sopbot') {
-      sop.classList.remove('hidden');
-      wiq.classList.remove('active');
-    } else {
-      sop.classList.add('hidden');
-      wiq.classList.add('active');
-    }
-  }
-</script>
-
-<script>
-  // Scroll-triggered reveal: each .reveal element fades/slides in once it
-  // enters the viewport. Staggered children (.reveal-group > .reveal) get
-  // their delay from the CSS nth-child rules above, so this only needs to
-  // toggle one class per element.
-  const revealTargets = document.querySelectorAll('.reveal');
-  if ('IntersectionObserver' in window && revealTargets.length) {
-    const revealObserver = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('in-view');
-          revealObserver.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.15, rootMargin: '0px 0px -60px 0px' });
-
-    revealTargets.forEach((el) => revealObserver.observe(el));
-  } else {
-    // No IntersectionObserver support (or reduced-motion already handles
-    // this via CSS) - just show everything immediately.
-    revealTargets.forEach((el) => el.classList.add('in-view'));
-  }
-
-  // Active nav-link tracking: highlights whichever section is currently
-  // in view as the visitor scrolls, so the nav reflects real position
-  // instead of staying static.
-  const navLinks = document.querySelectorAll('.nav-links a[href^="#"]');
-  const sections = Array.from(navLinks)
-    .map((link) => document.querySelector(link.getAttribute('href')))
-    .filter(Boolean);
-
-  if ('IntersectionObserver' in window && sections.length) {
-    const navObserver = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        const id = '#' + entry.target.id;
-        const link = document.querySelector(`.nav-links a[href="${id}"]`);
-        if (!link) return;
-        if (entry.isIntersecting) {
-          navLinks.forEach((l) => l.classList.remove('active'));
-          link.classList.add('active');
-        }
-      });
-    }, { rootMargin: '-40% 0px -55% 0px' });
-
-    sections.forEach((section) => navObserver.observe(section));
-  }
-</script>
+<script src="assets/common.js"></script>
 
 </body>
 </html>
-</script>

@@ -87,17 +87,32 @@ def create_checkout(product_id: str):
     return redirect(session.url, code=303)
 
 
+def _product_page_url(product_id: str) -> str:
+    """The marketing site is split into separate SOPBot/WorkflowIQ pages
+    (see marketing/sopbot.html and marketing/workflowiq.html) - route the
+    buyer back to whichever one they actually bought from."""
+    try:
+        product = get_product(product_id)
+    except ValueError:
+        return "https://thesopbot.com"
+    if product.category == "workflowiq_report":
+        return "https://thesopbot.com/workflowiq.html"
+    return "https://thesopbot.com/sopbot.html"
+
+
 @app.route("/checkout/success")
 def checkout_success():
     """Landing page after a successful redirect from Stripe. Fulfillment
     itself happens via the webhook, not this redirect - a redirect can be
     skipped/closed by the buyer's browser, a webhook cannot."""
-    return render_template("checkout_success.html")
+    product_page = _product_page_url(request.args.get("product", ""))
+    return render_template("checkout_success.html", product_page=product_page)
 
 
 @app.route("/checkout/cancel")
 def checkout_cancel():
-    return render_template("checkout_cancel.html")
+    product_page = _product_page_url(request.args.get("product", ""))
+    return render_template("checkout_cancel.html", product_page=product_page)
 
 
 @app.route("/webhook/stripe", methods=["POST"])
