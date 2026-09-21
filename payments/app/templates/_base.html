@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}SOPBot{% endblock %}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Work+Sans:wght@400;500;600&display=swap');
+
+  :root {
+    --ground: #FAF6EF;
+    --ground-raised: #F3ECDF;
+    --ink: #241F1A;
+    --ink-soft: #5C5348;
+    --accent: #C1602A;
+    --rule: #E3D9C6;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #1C1A17;
+      --ground-raised: #262220;
+      --ink: #F3EDE4;
+      --ink-soft: #C9BFB2;
+      --accent: #E2934F;
+      --rule: #3A342C;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--accent); }
+
+  h1 {
+    font-family: 'Fraunces', Georgia, serif;
+    margin: 0 0 12px;
+    font-size: 1.8rem;
+  }
+
+  .card {
+    max-width: 440px;
+    margin: 24px;
+    padding: 40px 32px;
+    background: var(--ground-raised);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    text-align: center;
+  }
+
+  p { color: var(--ink-soft); line-height: 1.5; }
+
+  .btn {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 10px 20px;
+    border-radius: 4px;
+    background: var(--accent);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+{% block content %}{% endblock %}
+</div>
+</body>
+</html>

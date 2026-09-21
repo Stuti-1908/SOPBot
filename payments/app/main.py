@@ -14,7 +14,7 @@ import os
 import logging
 
 import stripe
-from flask import Flask, request, jsonify, redirect
+from flask import Flask, request, jsonify, redirect, render_template
 
 from app.products import get_product, CATALOG
 from app.fulfillment import fulfill_order
@@ -92,18 +92,12 @@ def checkout_success():
     """Landing page after a successful redirect from Stripe. Fulfillment
     itself happens via the webhook, not this redirect - a redirect can be
     skipped/closed by the buyer's browser, a webhook cannot."""
-    product_id = request.args.get("product", "")
-    return jsonify(
-        message="Payment received - your order is being processed. "
-                "You'll receive access details shortly.",
-        product=product_id,
-    )
+    return render_template("checkout_success.html")
 
 
 @app.route("/checkout/cancel")
 def checkout_cancel():
-    product_id = request.args.get("product", "")
-    return jsonify(message="Checkout cancelled.", product=product_id)
+    return render_template("checkout_cancel.html")
 
 
 @app.route("/webhook/stripe", methods=["POST"])
