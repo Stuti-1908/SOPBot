@@ -1,18 +1,26 @@
 """Bridges a WorkflowIQ run to the pending Supabase order it fulfils, and
-emails the finished PDF to the customer via GHL once done.
+emails the finished PDF to the customer via SMTP once done.
 
 A WorkflowIQ purchase creates a "Pending" row in Supabase's workflowiq_runs
 table (see payments/app/fulfillment.py::_write_workflowiq_run). This module
 lets the operator pick that pending order in the UI, then on completion
 marks it "Complete" and emails the customer their report - closing the loop
 that was previously missing entirely (purchase -> nothing).
-"""
+
+Uses plain SMTP (support@thesopbot.com, hosted on SiteGround) rather than
+GHL - GHL's shared sub-account is used by a different project, so sending
+customer emails through it would mix that project's contacts with
+SOPBot's paying customers. Port 587/STARTTLS specifically, not 465/SSL -
+confirmed via a real test that the Hetzner host this runs on blocks
+outbound 465 but allows 587."""
 from __future__ import annotations
 import os
 from dataclasses import dataclass
 
-GHL_API_TOKEN = os.environ.get("GHL_API_TOKEN", "")
-GHL_LOCATION_ID = os.environ.get("GHL_LOCATION_ID", "")
+SMTP_HOST = os.environ.get("SMTP_HOST", "mail.thesopbot.com")
+SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+SMTP_USER = os.environ.get("SMTP_USER", "support@thesopbot.com")
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
 
 
 @dataclass
@@ -62,48 +70,34 @@ def mark_order_complete(
 
 
 def email_report_to_customer(contact_email: str, pdf_path: str) -> None:
-    """Sends the finished PDF to the customer via GHL, same API this
-    product already uses for every other customer-facing email (see the
-    n8n Dwayne-notification nodes for the same pattern).
+    """Sends the finished PDF to the customer as a real email attachment
+    via SMTP - no upload/hosting step needed, unlike GHL's URL-only
+    attachments field."""
+    if not SMTP_PASSWORD:
+        raise RuntimeError("SMTP_PASSWORD not configured - cannot email report")
 
-    GHL's /conversations/messages attachments field is a plain array of
-    public HTTPS URLs (verified against GHL's official API docs - it does
-    NOT accept base64 or file uploads), so the PDF is uploaded to Drive
-    and shared first (see google_drive.reader.upload_pdf_public), then
-    that URL is passed here."""
-    if not (GHL_API_TOKEN and GHL_LOCATION_ID):
-        raise RuntimeError("GHL_API_TOKEN/GHL_LOCATION_ID not configured - cannot email report")
+    import smtplib
+    from email.message import EmailMessage
 
-    import requests
-    from app.google_drive.reader import upload_pdf_public
-
-    pdf_url = upload_pdf_public(pdf_path, os.path.basename(pdf_path))
-
-    headers = {
-        "Authorization": f"Bearer {GHL_API_TOKEN}",
-        "Version": "2021-07-28",
-        "Content-Type": "application/json",
-    }
-
-    upsert = requests.post(
-        "https://services.leadconnectorhq.com/contacts/upsert",
-        headers=headers,
-        json={"locationId": GHL_LOCATION_ID, "email": contact_email, "source": "WorkflowIQ report delivery"},
-        timeout=15,
+    msg = EmailMessage()
+    msg["Subject"] = "Your WorkflowIQ report is ready"
+    msg["From"] = SMTP_USER
+    msg["To"] = contact_email
+    msg.set_content("Your WorkflowIQ process optimization report is attached.")
+    msg.add_alternative(
+        "<p>Your WorkflowIQ process optimization report is ready - see the attached PDF.</p>",
+        subtype="html",
     )
-    upsert.raise_for_status()
-    contact_id = upsert.json()["contact"]["id"]
 
-    send = requests.post(
-        "https://services.leadconnectorhq.com/conversations/messages",
-        headers=headers,
-        json={
-            "type": "Email",
-            "contactId": contact_id,
-            "subject": "Your WorkflowIQ report is ready",
-            "html": "<p>Your WorkflowIQ process optimization report is ready - see the attached PDF.</p>",
-            "attachments": [pdf_url],
-        },
-        timeout=30,
-    )
-    send.raise_for_status()
+    with open(pdf_path, "rb") as f:
+        msg.add_attachment(
+            f.read(),
+            maintype="application",
+            subtype="pdf",
+            filename=os.path.basename(pdf_path),
+        )
+
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as server:
+        server.starttls()
+        server.login(SMTP_USER, SMTP_PASSWORD)
+        server.send_message(msg)
