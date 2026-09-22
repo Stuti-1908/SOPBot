@@ -1,6 +1,12 @@
 [
   {
+    "updatedAt": "2026-09-22T11:54:55.439Z",
+    "createdAt": "2026-07-01T19:22:39.535Z",
+    "id": "fFboHgba81r265CZ",
     "name": "SOPBot Main (DRAFT - employee email feature)",
+    "description": null,
+    "active": true,
+    "isArchived": false,
     "nodes": [
       {
         "parameters": {
@@ -224,7 +230,7 @@
             "value": "tbl3Hzy9n54GGNjql",
             "mode": "id"
           },
-          "filterByFormula": "=LOWER({Client Name}) = LOWER('{{ $json.company_name }}')",
+          "filterByFormula": "=REGEX_REPLACE(TRIM(LOWER({Client Name})), \"\\s*[,.]?\\s*(inc|llc|ltd|corp|co|company)\\.?\\s*$\", \"\") = '{{ $json.company_name_normalized }}'",
           "options": {}
         },
         "id": "company-router",
@@ -399,7 +405,7 @@
           },
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={{ JSON.stringify({\n  type: \"Email\",\n  contactId: $('9b. Normalize Company Match').item.json.ghl_contact_id,\n  subject: \"New SOP Ready: \" + $('8. Parse Claude JSON').item.json.process_name + \" \u00e2\u20ac\u201d \" + $('8. Parse Claude JSON').item.json.employee_name,\n  html: \"<p>A new SOP has been generated.</p><p>Process: \" + $('8. Parse Claude JSON').item.json.process_name + \"</p><p>Company: \" + $('8. Parse Claude JSON').item.json.company_name + \"</p><p><a href='https://docs.google.com/document/d/\" + $('16a. Copy Template Doc').item.json.id + \"/edit'>View SOP Document</a></p>\"\n}) }}",
+          "jsonBody": "={{ JSON.stringify({\n  type: \"Email\",\n  contactId: $('9b. Normalize Company Match').item.json.ghl_contact_id,\n  subject: \"New SOP Ready: \" + $('8. Parse Claude JSON').item.json.process_name + \" â€” \" + $('8. Parse Claude JSON').item.json.employee_name,\n  html: \"<p>A new SOP has been generated.</p><p>Process: \" + $('8. Parse Claude JSON').item.json.process_name + \"</p><p>Company: \" + $('8. Parse Claude JSON').item.json.company_name + \"</p><p><a href='https://docs.google.com/document/d/\" + $('16a. Copy Template Doc').item.json.id + \"/edit'>View SOP Document</a></p>\"\n}) }}",
           "options": {}
         },
         "id": "owner-email-ghl",
@@ -441,7 +447,7 @@
           },
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={{ JSON.stringify({\n  type: \"Email\",\n  contactId: \"FGRKMuONxezAC6d940BJ\",\n  subject: \"ACTION REQUIRED \u00e2\u20ac\u201d SOPBot: Unmatched Company on Call\",\n  html: \"<p>Unmatched company on a SOPBot call.</p><p>Raw name: \" + $('8. Parse Claude JSON').item.json.company_name + \"</p><p>Employee: \" + $('8. Parse Claude JSON').item.json.employee_name + \"</p><p>Process: \" + $('8. Parse Claude JSON').item.json.process_name + \"</p><p>Call ID: \" + $('3. Parse Vapi Payload').item.json.call_id + \"</p><p><a href='https://docs.google.com/document/d/\" + $('16b. Copy Template Doc (Unmatched)').item.json.id + \"/edit'>View SOP Document (Unmatched folder)</a></p>\"\n}) }}",
+          "jsonBody": "={{ JSON.stringify({\n  type: \"Email\",\n  contactId: \"FGRKMuONxezAC6d940BJ\",\n  subject: \"ACTION REQUIRED â€” SOPBot: Unmatched Company on Call\",\n  html: \"<p>Unmatched company on a SOPBot call.</p><p>Raw name: \" + $('8. Parse Claude JSON').item.json.company_name + \"</p><p>Employee: \" + $('8. Parse Claude JSON').item.json.employee_name + \"</p><p>Process: \" + $('8. Parse Claude JSON').item.json.process_name + \"</p><p>Call ID: \" + $('3. Parse Vapi Payload').item.json.call_id + \"</p><p><a href='https://docs.google.com/document/d/\" + $('16b. Copy Template Doc (Unmatched)').item.json.id + \"/edit'>View SOP Document (Unmatched folder)</a></p>\"\n}) }}",
           "options": {}
         },
         "id": "ops-alert-ghl",
@@ -464,7 +470,7 @@
       },
       {
         "parameters": {
-          "jsCode": "const data = $input.first().json;\nconst company = (data.company_name || '').trim();\nconst steps = Array.isArray(data.steps) ? data.steps : [];\nconst isLowQuality = !company || company.toLowerCase() === 'unknown' || steps.length === 0;\nreturn [{ json: { ...data, _low_quality: isLowQuality, _quality_reason: isLowQuality ? ('Claude extraction produced insufficient data: company=' + JSON.stringify(company) + ', steps=' + steps.length) : null } }];"
+          "jsCode": "const data = $input.first().json;\nconst company = (data.company_name || '').trim();\n// Strip common legal suffixes so 'Acme Inc' and 'Acme' match the same\n// client record - see docs/adr or session notes on the company-name\n// matching fix. Used by both the Airtable Company Router formula and\n// the Supabase client lookup (18c), so both branches match consistently.\nconst companyNormalized = company.toLowerCase().replace(/\\s*[,.]?\\s*(inc|llc|ltd|corp|co|company)\\.?\\s*$/, '').trim();\nconst steps = Array.isArray(data.steps) ? data.steps : [];\nconst isLowQuality = !company || company.toLowerCase() === 'unknown' || steps.length === 0;\nreturn [{ json: { ...data, company_name: company, company_name_normalized: companyNormalized, _low_quality: isLowQuality, _quality_reason: isLowQuality ? ('Claude extraction produced insufficient data: company=' + JSON.stringify(company) + ', steps=' + steps.length) : null } }];"
         },
         "id": "validate-extraction-quality",
         "name": "8b. Validate Extraction Quality",
@@ -553,7 +559,7 @@
       },
       {
         "parameters": {
-          "jsCode": "const NL = String.fromCharCode(10);\nconst data = $('8. Parse Claude JSON').item.json;\n\nfunction esc(s) { return (s === null || s === undefined) ? '' : String(s); }\n\nconst stepsBlock = (data.steps || []).map(function(s) {\n  const tools = (s.tools_used || []).join(', ') || 'None specified';\n  const notes = [].concat(s.decision_points || [], s.pain_points || [], s.common_errors || []).map(function(x){ return typeof x === 'string' ? x : JSON.stringify(x); }).join('; ') || 'None';\n  const done = s.completion_indicator || 'Not specified';\n  const parts = [\n    'Step ' + s.step_number + ': ' + esc(s.action || s.title),\n    'Tools: ' + tools,\n    'Notes: ' + notes,\n    'Done when: ' + done\n  ];\n  return parts.join(NL);\n}).join(NL + NL);\n\nconst toolsSet = new Set();\n(data.steps || []).forEach(function(s) { (s.tools_used || []).forEach(function(t) { toolsSet.add(t); }); });\n(data.tools_and_resources || []).forEach(function(t) { toolsSet.add(t); });\nconst toolsList = Array.from(toolsSet).join(', ') || 'None specified';\n\nconst exceptionHandling = (data.exception_handling || []).length\n  ? data.exception_handling.map(function(e) {\n      return typeof e === 'string' ? e : ('If ' + (e.if || e.condition) + ': ' + (e.then || e.action));\n    }).join(NL)\n  : 'None captured during this call.';\n\nconst today = new Date().toISOString().slice(0, 10);\n\nreturn [{\n  json: {\n    doc_name: esc(data.process_name) + ' \u00e2\u20ac\u201d ' + esc(data.employee_name) + ' \u00e2\u20ac\u201d ' + today,\n    tokens: {\n      '{{COMPANY_NAME}}': esc(data.company_name),\n      '{{PROCESS_NAME}}': esc(data.process_name),\n      '{{EMPLOYEE_ROLE}}': esc(data.employee_role),\n      '{{EMPLOYEE_NAME}}': esc(data.employee_name),\n      '{{EMPLOYEE_TENURE}}': esc(data.employee_tenure),\n      '{{DATE}}': today,\n      '{{PROCESS_FREQUENCY}}': esc(data.frequency || data.process_frequency),\n      '{{ROLE_SUMMARY}}': esc(data.role_summary),\n      '{{PROCESS_TRIGGER}}': esc(data.process_trigger),\n      '{{TOOLS_LIST}}': toolsList,\n      '{{STEPS_BLOCK}}': stepsBlock || 'No steps captured.',\n      '{{EXCEPTION_HANDLING}}': exceptionHandling,\n      '{{COMPLETION_CRITERIA}}': esc(data.completion_criteria),\n      '{{INSIDER_NOTES}}': esc(data.insider_notes || data.notes)\n    }\n  }\n}];\n"
+          "jsCode": "const NL = String.fromCharCode(10);\nconst data = $('8. Parse Claude JSON').item.json;\n\nfunction esc(s) { return (s === null || s === undefined) ? '' : String(s); }\n\nconst stepsBlock = (data.steps || []).map(function(s) {\n  const tools = (s.tools_used || []).join(', ') || 'None specified';\n  const notes = [].concat(s.decision_points || [], s.pain_points || [], s.common_errors || []).map(function(x){ return typeof x === 'string' ? x : JSON.stringify(x); }).join('; ') || 'None';\n  const done = s.completion_indicator || 'Not specified';\n  const parts = [\n    'Step ' + s.step_number + ': ' + esc(s.action || s.title),\n    'Tools: ' + tools,\n    'Notes: ' + notes,\n    'Done when: ' + done\n  ];\n  return parts.join(NL);\n}).join(NL + NL);\n\nconst toolsSet = new Set();\n(data.steps || []).forEach(function(s) { (s.tools_used || []).forEach(function(t) { toolsSet.add(t); }); });\n(data.tools_and_resources || []).forEach(function(t) { toolsSet.add(t); });\nconst toolsList = Array.from(toolsSet).join(', ') || 'None specified';\n\nconst exceptionHandling = (data.exception_handling || []).length\n  ? data.exception_handling.map(function(e) {\n      return typeof e === 'string' ? e : ('If ' + (e.if || e.condition) + ': ' + (e.then || e.action));\n    }).join(NL)\n  : 'None captured during this call.';\n\nconst today = new Date().toISOString().slice(0, 10);\n\nreturn [{\n  json: {\n    doc_name: esc(data.employee_name) + ' - ' + esc(data.process_name),\n    tokens: {\n      '{{COMPANY_NAME}}': esc(data.company_name),\n      '{{PROCESS_NAME}}': esc(data.process_name),\n      '{{EMPLOYEE_ROLE}}': esc(data.employee_role),\n      '{{EMPLOYEE_NAME}}': esc(data.employee_name),\n      '{{EMPLOYEE_TENURE}}': esc(data.employee_tenure),\n      '{{DATE}}': today,\n      '{{PROCESS_FREQUENCY}}': esc(data.frequency || data.process_frequency),\n      '{{ROLE_SUMMARY}}': esc(data.role_summary),\n      '{{PROCESS_TRIGGER}}': esc(data.process_trigger),\n      '{{TOOLS_LIST}}': toolsList,\n      '{{STEPS_BLOCK}}': stepsBlock || 'No steps captured.',\n      '{{EXCEPTION_HANDLING}}': exceptionHandling,\n      '{{COMPLETION_CRITERIA}}': esc(data.completion_criteria),\n      '{{INSIDER_NOTES}}': esc(data.insider_notes || data.notes)\n    }\n  }\n}];\n"
         },
         "id": "prepare-doc-fields-matched",
         "name": "14a. Prepare Doc Fields (Matched)",
@@ -566,7 +572,7 @@
       },
       {
         "parameters": {
-          "jsCode": "const NL = String.fromCharCode(10);\nconst data = $('8. Parse Claude JSON').item.json;\n\nfunction esc(s) { return (s === null || s === undefined) ? '' : String(s); }\n\nconst stepsBlock = (data.steps || []).map(function(s) {\n  const tools = (s.tools_used || []).join(', ') || 'None specified';\n  const notes = [].concat(s.decision_points || [], s.pain_points || [], s.common_errors || []).map(function(x){ return typeof x === 'string' ? x : JSON.stringify(x); }).join('; ') || 'None';\n  const done = s.completion_indicator || 'Not specified';\n  const parts = [\n    'Step ' + s.step_number + ': ' + esc(s.action || s.title),\n    'Tools: ' + tools,\n    'Notes: ' + notes,\n    'Done when: ' + done\n  ];\n  return parts.join(NL);\n}).join(NL + NL);\n\nconst toolsSet = new Set();\n(data.steps || []).forEach(function(s) { (s.tools_used || []).forEach(function(t) { toolsSet.add(t); }); });\n(data.tools_and_resources || []).forEach(function(t) { toolsSet.add(t); });\nconst toolsList = Array.from(toolsSet).join(', ') || 'None specified';\n\nconst exceptionHandling = (data.exception_handling || []).length\n  ? data.exception_handling.map(function(e) {\n      return typeof e === 'string' ? e : ('If ' + (e.if || e.condition) + ': ' + (e.then || e.action));\n    }).join(NL)\n  : 'None captured during this call.';\n\nconst today = new Date().toISOString().slice(0, 10);\n\nreturn [{\n  json: {\n    doc_name: esc(data.process_name) + ' \u00e2\u20ac\u201d ' + esc(data.employee_name) + ' \u00e2\u20ac\u201d ' + today,\n    tokens: {\n      '{{COMPANY_NAME}}': esc(data.company_name),\n      '{{PROCESS_NAME}}': esc(data.process_name),\n      '{{EMPLOYEE_ROLE}}': esc(data.employee_role),\n      '{{EMPLOYEE_NAME}}': esc(data.employee_name),\n      '{{EMPLOYEE_TENURE}}': esc(data.employee_tenure),\n      '{{DATE}}': today,\n      '{{PROCESS_FREQUENCY}}': esc(data.frequency || data.process_frequency),\n      '{{ROLE_SUMMARY}}': esc(data.role_summary),\n      '{{PROCESS_TRIGGER}}': esc(data.process_trigger),\n      '{{TOOLS_LIST}}': toolsList,\n      '{{STEPS_BLOCK}}': stepsBlock || 'No steps captured.',\n      '{{EXCEPTION_HANDLING}}': exceptionHandling,\n      '{{COMPLETION_CRITERIA}}': esc(data.completion_criteria),\n      '{{INSIDER_NOTES}}': esc(data.insider_notes || data.notes)\n    }\n  }\n}];\n"
+          "jsCode": "const NL = String.fromCharCode(10);\nconst data = $('8. Parse Claude JSON').item.json;\n\nfunction esc(s) { return (s === null || s === undefined) ? '' : String(s); }\n\nconst stepsBlock = (data.steps || []).map(function(s) {\n  const tools = (s.tools_used || []).join(', ') || 'None specified';\n  const notes = [].concat(s.decision_points || [], s.pain_points || [], s.common_errors || []).map(function(x){ return typeof x === 'string' ? x : JSON.stringify(x); }).join('; ') || 'None';\n  const done = s.completion_indicator || 'Not specified';\n  const parts = [\n    'Step ' + s.step_number + ': ' + esc(s.action || s.title),\n    'Tools: ' + tools,\n    'Notes: ' + notes,\n    'Done when: ' + done\n  ];\n  return parts.join(NL);\n}).join(NL + NL);\n\nconst toolsSet = new Set();\n(data.steps || []).forEach(function(s) { (s.tools_used || []).forEach(function(t) { toolsSet.add(t); }); });\n(data.tools_and_resources || []).forEach(function(t) { toolsSet.add(t); });\nconst toolsList = Array.from(toolsSet).join(', ') || 'None specified';\n\nconst exceptionHandling = (data.exception_handling || []).length\n  ? data.exception_handling.map(function(e) {\n      return typeof e === 'string' ? e : ('If ' + (e.if || e.condition) + ': ' + (e.then || e.action));\n    }).join(NL)\n  : 'None captured during this call.';\n\nconst today = new Date().toISOString().slice(0, 10);\n\nreturn [{\n  json: {\n    doc_name: esc(data.employee_name) + ' - ' + esc(data.process_name),\n    tokens: {\n      '{{COMPANY_NAME}}': esc(data.company_name),\n      '{{PROCESS_NAME}}': esc(data.process_name),\n      '{{EMPLOYEE_ROLE}}': esc(data.employee_role),\n      '{{EMPLOYEE_NAME}}': esc(data.employee_name),\n      '{{EMPLOYEE_TENURE}}': esc(data.employee_tenure),\n      '{{DATE}}': today,\n      '{{PROCESS_FREQUENCY}}': esc(data.frequency || data.process_frequency),\n      '{{ROLE_SUMMARY}}': esc(data.role_summary),\n      '{{PROCESS_TRIGGER}}': esc(data.process_trigger),\n      '{{TOOLS_LIST}}': toolsList,\n      '{{STEPS_BLOCK}}': stepsBlock || 'No steps captured.',\n      '{{EXCEPTION_HANDLING}}': exceptionHandling,\n      '{{COMPLETION_CRITERIA}}': esc(data.completion_criteria),\n      '{{INSIDER_NOTES}}': esc(data.insider_notes || data.notes)\n    }\n  }\n}];\n"
         },
         "id": "prepare-doc-fields-unmatched",
         "name": "14b. Prepare Doc Fields (Unmatched)",
@@ -585,7 +591,7 @@
           "nodeCredentialType": "googleDriveOAuth2Api",
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={{ JSON.stringify({ name: $json.doc_name, parents: ['1Hn1CpdeMK0ikT8K52NSLosoo2689BZZJ'] }) }}\n",
+          "jsonBody": "={{ JSON.stringify({ name: $json.doc_name, parents: [$('15e. Resolve Company Folder ID').item.json.company_folder_id] }) }}\n",
           "options": {}
         },
         "id": "copy-template-matched",
@@ -614,7 +620,7 @@
           "nodeCredentialType": "googleDriveOAuth2Api",
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={{ JSON.stringify({ name: $json.doc_name, parents: ['1Hn1CpdeMK0ikT8K52NSLosoo2689BZZJ'] }) }}",
+          "jsonBody": "={{ JSON.stringify({ name: $json.doc_name, parents: [$('15e. Resolve Company Folder ID').item.json.company_folder_id] }) }}\n",
           "options": {}
         },
         "id": "copy-template-unmatched",
@@ -1034,7 +1040,7 @@
               {
                 "keyName": "client_name",
                 "condition": "ilike",
-                "keyValue": "={{ $('8. Parse Claude JSON').item.json.company_name }}"
+                "keyValue": "={{ $('8b. Validate Extraction Quality').item.json.company_name_normalized }}"
               }
             ]
           }
@@ -1111,6 +1117,168 @@
           }
         },
         "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://ypxvhajzbhjugtrmtomf.supabase.co/rest/v1/rpc/increment_sop_credits_used",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "supabaseApi",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ client_id_input: $('18c. Find Supabase Client').item.json.id }) }}",
+          "options": {}
+        },
+        "id": "18e-increment-credit",
+        "name": "18e. Increment Credit Used",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2544,
+          -160
+        ],
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "supabaseApi": {
+            "id": "LcjvXxI8vq81hOBq",
+            "name": "DadaAI Supabase (native)"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "method": "GET",
+          "url": "https://www.googleapis.com/drive/v3/files",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "googleDriveOAuth2Api",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "q",
+                "value": "=\"1Hn1CpdeMK0ikT8K52NSLosoo2689BZZJ\" in parents and mimeType = \"application/vnd.google-apps.folder\" and trashed = false"
+              },
+              {
+                "name": "fields",
+                "value": "files(id, name)"
+              },
+              {
+                "name": "pageSize",
+                "value": "1000"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "list-company-folders",
+        "name": "15a. List Company Folders",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1520,
+          -400
+        ],
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "googleDriveOAuth2Api": {
+            "id": "HsauKIhtNk1nzT6a",
+            "name": "DadaAI Google Drive OAuth2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// Same normalization as 8b.Validate Extraction Quality, applied here to\n// existing Drive folder names too, so \"Digital Dada\" and \"Digital Dada Inc\"\n// resolve to the same folder even though the folder itself keeps whatever\n// name the FIRST caller from that company used.\nfunction normalize(name) {\n  return (name || '').toLowerCase().trim()\n    .replace(/\\s*[,.]?\\s*(inc|llc|ltd|corp|co|company)\\.?\\s*$/, '').trim();\n}\nconst targetNormalized = $('8b. Validate Extraction Quality').item.json.company_name_normalized;\nconst folders = $json.files || [];\nconst found = folders.find(function(f) { return normalize(f.name) === targetNormalized; });\nreturn [{ json: {\n  folder_found: !!found,\n  company_folder_id: found ? found.id : null,\n  company_name_raw: $('8b. Validate Extraction Quality').item.json.company_name\n} }];"
+        },
+        "id": "match-company-folder",
+        "name": "15b. Match Company Folder",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1640,
+          -400
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "id": "folder-found",
+                "leftValue": "={{ $json.folder_found }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "is-folder-found",
+        "name": "15c. Folder Exists?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          1760,
+          -400
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://www.googleapis.com/drive/v3/files",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "googleDriveOAuth2Api",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ name: $json.company_name_raw, mimeType: 'application/vnd.google-apps.folder', parents: ['1Hn1CpdeMK0ikT8K52NSLosoo2689BZZJ'] }) }}",
+          "options": {}
+        },
+        "id": "create-company-folder",
+        "name": "15d. Create Company Folder",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1880,
+          -320
+        ],
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "googleDriveOAuth2Api": {
+            "id": "HsauKIhtNk1nzT6a",
+            "name": "DadaAI Google Drive OAuth2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// Merges both branches (an existing folder found in 15b, or one just\n// created in 15d) into one consistent field for 16a/16b to consume.\nconst item = $input.first().json;\nconst folderId = item.company_folder_id || item.id;\nreturn [{ json: { company_folder_id: folderId } }];"
+        },
+        "id": "resolve-company-folder-id",
+        "name": "15e. Resolve Company Folder ID",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2000,
+          -360
+        ]
       }
     ],
     "connections": {
@@ -1218,7 +1386,7 @@
         "main": [
           [
             {
-              "node": "10. Is Matched?",
+              "node": "15a. List Company Folders",
               "type": "main",
               "index": 0
             }
@@ -1490,7 +1658,80 @@
         "main": [
           [
             {
+              "node": "18e. Increment Credit Used",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "18e. Increment Credit Used": {
+        "main": [
+          [
+            {
               "node": "12a. Owner Email (GHL)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "15a. List Company Folders": {
+        "main": [
+          [
+            {
+              "node": "15b. Match Company Folder",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "15b. Match Company Folder": {
+        "main": [
+          [
+            {
+              "node": "15c. Folder Exists?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "15c. Folder Exists?": {
+        "main": [
+          [
+            {
+              "node": "15e. Resolve Company Folder ID",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "15d. Create Company Folder",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "15d. Create Company Folder": {
+        "main": [
+          [
+            {
+              "node": "15e. Resolve Company Folder ID",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "15e. Resolve Company Folder ID": {
+        "main": [
+          [
+            {
+              "node": "10. Is Matched?",
               "type": "main",
               "index": 0
             }
@@ -1498,11 +1739,1803 @@
         ]
       }
     },
-    "pinData": {},
     "settings": {
       "executionOrder": "v1",
       "binaryMode": "separate",
       "errorWorkflow": "FrsqWitM0NmN5gqQ"
+    },
+    "staticData": null,
+    "meta": {
+      "templateCredsSetupCompleted": true
+    },
+    "nodeGroups": [],
+    "pinData": {},
+    "versionId": "93d8f2f3-4571-42ef-bf77-92027cd37ea7",
+    "activeVersionId": "93d8f2f3-4571-42ef-bf77-92027cd37ea7",
+    "versionCounter": 107,
+    "triggerCount": 1,
+    "sourceWorkflowId": null,
+    "shared": [
+      {
+        "updatedAt": "2026-09-14T09:59:09.818Z",
+        "createdAt": "2026-09-14T09:59:09.818Z",
+        "role": "workflow:owner",
+        "workflowId": "fFboHgba81r265CZ",
+        "projectId": "G4YPNOUBb8qVYD8F",
+        "project": {
+          "updatedAt": "2026-09-17T10:29:04.009Z",
+          "createdAt": "2026-07-01T14:33:21.712Z",
+          "id": "G4YPNOUBb8qVYD8F",
+          "name": "Stuti Gohil <sng19.work@gmail.com>",
+          "type": "personal",
+          "icon": null,
+          "description": null,
+          "customTelemetryTags": [],
+          "creatorId": "659411d0-00f4-4312-ba4e-31648993ba9d"
+        }
+      }
+    ],
+    "tags": [],
+    "activeVersion": {
+      "updatedAt": "2026-09-22T11:54:55.443Z",
+      "createdAt": "2026-09-22T11:54:55.443Z",
+      "versionId": "93d8f2f3-4571-42ef-bf77-92027cd37ea7",
+      "workflowId": "fFboHgba81r265CZ",
+      "nodes": [
+        {
+          "parameters": {
+            "httpMethod": "POST",
+            "path": "sopbot-call-ended",
+            "authentication": "headerAuth",
+            "options": {}
+          },
+          "id": "webhook-trigger",
+          "name": "1. Webhook Trigger",
+          "type": "n8n-nodes-base.webhook",
+          "typeVersion": 2,
+          "position": [
+            -1600,
+            -128
+          ],
+          "webhookId": "sopbot-call-ended",
+          "credentials": {
+            "httpHeaderAuth": {
+              "id": "ZJhmua8tY5wvs2T2",
+              "name": "DadaAI Vapi Webhook Secret"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "jsCode": "const body = $input.first().json.body || {};\nconst msg = body.message || {};\nconst call = msg.call || {};\n\n// Real Vapi end-of-call-report puts startedAt/endedAt/duration/transcript at the TOP level of `message`,\n// not nested under `message.call` (the spec doc's example payload was not accurate to the live schema).\n// Fallbacks to call.* are kept in case a future Vapi version or a different event type nests them there.\nconst startedAt = msg.startedAt || call.startedAt || '';\nconst endedAt = msg.endedAt || call.endedAt || '';\nconst durationSeconds = msg.durationSeconds || call.durationSeconds || 0;\nconst transcript = msg.transcript || '';\nconst customerNumber = (call.customer && call.customer.number) || (msg.customer && msg.customer.number) || '';\n\nreturn [{\n  json: {\n    call_id: call.id || msg.call?.id || '',\n    transcript: transcript,\n    started_at: startedAt,\n    ended_at: endedAt,\n    duration_seconds: durationSeconds,\n    customer_number: customerNumber\n  }\n}];"
+          },
+          "id": "parse-payload",
+          "name": "3. Parse Vapi Payload",
+          "type": "n8n-nodes-base.code",
+          "typeVersion": 2,
+          "position": [
+            -1376,
+            -128
+          ]
+        },
+        {
+          "parameters": {
+            "operation": "search",
+            "base": {
+              "__rl": true,
+              "value": "appN6pxMbI5O2dpDj",
+              "mode": "id"
+            },
+            "table": {
+              "__rl": true,
+              "value": "tblaOwskQtlIW7jIC",
+              "mode": "id"
+            },
+            "filterByFormula": "={Call ID} = '{{ $json.call_id }}'",
+            "options": {}
+          },
+          "id": "idempotency-check",
+          "name": "4. Idempotency Check",
+          "type": "n8n-nodes-base.airtable",
+          "typeVersion": 2.1,
+          "position": [
+            -1152,
+            -128
+          ],
+          "alwaysOutputData": true,
+          "credentials": {
+            "airtableTokenApi": {
+              "id": "JHtVTjVx4RVh3iEJ",
+              "name": "DadaAI Airtable"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "jsCode": "const items = $input.all().filter(i => i.json && Object.keys(i.json).length > 0);\nreturn [{ json: { found: items.length > 0, id: items.length > 0 ? items[0].json.id : null } }];"
+          },
+          "id": "normalize-idempotency",
+          "name": "4b. Normalize Idempotency Result",
+          "type": "n8n-nodes-base.code",
+          "typeVersion": 2,
+          "position": [
+            -928,
+            -128
+          ],
+          "alwaysOutputData": true
+        },
+        {
+          "parameters": {
+            "conditions": {
+              "options": {
+                "caseSensitive": true,
+                "leftValue": "",
+                "typeValidation": "strict",
+                "version": 1
+              },
+              "conditions": [
+                {
+                  "id": "dup-check",
+                  "leftValue": "={{ $json.found }}",
+                  "rightValue": true,
+                  "operator": {
+                    "type": "boolean",
+                    "operation": "true",
+                    "singleValue": true
+                  }
+                }
+              ],
+              "combinator": "and"
+            },
+            "options": {}
+          },
+          "id": "is-duplicate",
+          "name": "5. Is Duplicate?",
+          "type": "n8n-nodes-base.if",
+          "typeVersion": 2,
+          "position": [
+            -704,
+            -128
+          ]
+        },
+        {
+          "parameters": {
+            "operation": "create",
+            "base": {
+              "__rl": true,
+              "value": "appN6pxMbI5O2dpDj",
+              "mode": "id"
+            },
+            "table": {
+              "__rl": true,
+              "value": "tblaOwskQtlIW7jIC",
+              "mode": "id"
+            },
+            "columns": {
+              "mappingMode": "defineBelow",
+              "value": {
+                "Call ID": "={{ $('3. Parse Vapi Payload').item.json.call_id }}",
+                "Call Timestamp": "={{ $('3. Parse Vapi Payload').item.json.started_at }}",
+                "Duration Seconds": "={{ $('3. Parse Vapi Payload').item.json.duration_seconds }}",
+                "Transcript": "={{ $('3. Parse Vapi Payload').item.json.transcript }}",
+                "Status": "Processing"
+              }
+            },
+            "options": {}
+          },
+          "id": "create-processing-row",
+          "name": "6. Create Processing Row",
+          "type": "n8n-nodes-base.airtable",
+          "typeVersion": 2.1,
+          "position": [
+            -480,
+            -128
+          ],
+          "credentials": {
+            "airtableTokenApi": {
+              "id": "JHtVTjVx4RVh3iEJ",
+              "name": "DadaAI Airtable"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "method": "POST",
+            "url": "https://api.anthropic.com/v1/messages",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "anthropicApi",
+            "sendHeaders": true,
+            "headerParameters": {
+              "parameters": [
+                {
+                  "name": "anthropic-version",
+                  "value": "2023-06-01"
+                }
+              ]
+            },
+            "sendBody": true,
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({\n  model: \"claude-sonnet-4-6\",\n  max_tokens: 4096,\n  system: \"You are SOPBot, an expert business process analyst. Extract a structured SOP from this call transcript. Respond with valid JSON only, no markdown fences, matching this schema: {\\\"process_name\\\":\\\"string\\\",\\\"department\\\":\\\"string|null\\\",\\\"process_owner\\\":\\\"string|null\\\",\\\"company_name\\\":\\\"string\\\",\\\"employee_name\\\":\\\"string|null\\\",\\\"employee_role\\\":\\\"string|null\\\",\\\"employee_tenure\\\":\\\"string|null\\\",\\\"employee_email\\\":\\\"string|null - the email address they gave to receive a copy of this SOP\\\",\\\"role_summary\\\":\\\"string|null - one or two sentences on what the role is responsible for\\\",\\\"process_trigger\\\":\\\"string|null - what kicks the process off\\\",\\\"frequency\\\":\\\"string|null\\\",\\\"steps\\\":[{\\\"step_number\\\":1,\\\"title\\\":\\\"string\\\",\\\"description\\\":\\\"string\\\",\\\"tools_used\\\":[\\\"strings\\\"],\\\"decision_points\\\":[\\\"plain strings only, e.g. If X then Y\\\"],\\\"common_errors\\\":[\\\"plain strings only\\\"],\\\"pain_points\\\":[\\\"plain strings only\\\"],\\\"completion_indicator\\\":\\\"string|null - how you know this step is done\\\"}],\\\"inputs\\\":[],\\\"outputs\\\":[],\\\"systems_used\\\":[],\\\"tools_and_resources\\\":[\\\"deduplicated list of all tools\\\"],\\\"exceptions\\\":[],\\\"exception_handling\\\":[\\\"plain strings only, formatted as: If X, then Y\\\"],\\\"completion_criteria\\\":\\\"string|null - final output or result that tells you the whole process is complete\\\",\\\"insider_notes\\\":\\\"string|null - things a new hire would get wrong\\\",\\\"notes\\\":\\\"string|null\\\"}. All array items must be plain strings, never nested objects. Extract ONLY what the employee said; use null or empty arrays for anything not captured.\",\n  messages: [{ role: \"user\", content: \"TRANSCRIPT:\\n\" + $('3. Parse Vapi Payload').item.json.transcript }]\n}) }}",
+            "options": {
+              "timeout": 60000
+            }
+          },
+          "id": "claude-extraction",
+          "name": "7. Claude Extraction",
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.2,
+          "position": [
+            -256,
+            -128
+          ],
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 2000,
+          "credentials": {
+            "anthropicApi": {
+              "id": "jP6Zwvxix9zBZYe8",
+              "name": "DadaAI Anthropic"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "jsCode": "const raw = $input.first().json.content[0].text;\nlet cleaned = raw.trim();\n\n// Strip markdown code fences using plain string ops (avoids regex+backtick transport issues)\nconst fence = String.fromCharCode(96, 96, 96); // ```\nif (cleaned.startsWith(fence)) {\n  let rest = cleaned.slice(fence.length);\n  if (rest.toLowerCase().startsWith('json')) rest = rest.slice(4);\n  const firstNewline = rest.indexOf(String.fromCharCode(10));\n  if (firstNewline !== -1) rest = rest.slice(firstNewline + 1);\n  if (rest.endsWith(fence)) rest = rest.slice(0, -fence.length);\n  cleaned = rest.trim();\n}\n\n// Claude sometimes prefixes the JSON with a natural-language sentence (e.g. noting a\n// call was cut short) even when told to return JSON only. Extract the JSON object by\n// finding the first '{' and its balanced matching '}', ignoring any surrounding prose.\nfunction extractJsonObject(text) {\n  const start = text.indexOf('{');\n  if (start === -1) return null;\n  let depth = 0;\n  for (let i = start; i < text.length; i++) {\n    if (text[i] === '{') depth++;\n    else if (text[i] === '}') {\n      depth--;\n      if (depth === 0) return text.slice(start, i + 1);\n    }\n  }\n  return null;\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(cleaned);\n} catch (firstErr) {\n  const extracted = extractJsonObject(cleaned);\n  if (!extracted) {\n    throw new Error('Claude returned invalid JSON and no JSON object could be located: ' + firstErr.message + ' | raw: ' + cleaned.slice(0, 500));\n  }\n  try {\n    parsed = JSON.parse(extracted);\n  } catch (secondErr) {\n    throw new Error('Claude returned invalid JSON even after extracting the object: ' + secondErr.message + ' | raw: ' + cleaned.slice(0, 500));\n  }\n}\nreturn [{ json: parsed }];"
+          },
+          "id": "parse-claude-json",
+          "name": "8. Parse Claude JSON",
+          "type": "n8n-nodes-base.code",
+          "typeVersion": 2,
+          "position": [
+            -32,
+            -128
+          ]
+        },
+        {
+          "parameters": {
+            "operation": "search",
+            "base": {
+              "__rl": true,
+              "value": "appN6pxMbI5O2dpDj",
+              "mode": "id"
+            },
+            "table": {
+              "__rl": true,
+              "value": "tbl3Hzy9n54GGNjql",
+              "mode": "id"
+            },
+            "filterByFormula": "=REGEX_REPLACE(TRIM(LOWER({Client Name})), \"\\s*[,.]?\\s*(inc|llc|ltd|corp|co|company)\\.?\\s*$\", \"\") = '{{ $json.company_name_normalized }}'",
+            "options": {}
+          },
+          "id": "company-router",
+          "name": "9. Company Router",
+          "type": "n8n-nodes-base.airtable",
+          "typeVersion": 2.1,
+          "position": [
+            640,
+            -224
+          ],
+          "alwaysOutputData": true,
+          "credentials": {
+            "airtableTokenApi": {
+              "id": "JHtVTjVx4RVh3iEJ",
+              "name": "DadaAI Airtable"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "jsCode": "const items = $input.all().filter(i => i.json && Object.keys(i.json).length > 0);\nconst match = items.length > 0 ? items[0].json : null;\nreturn [{ json: {\n  matched: items.length > 0,\n  client_id: match ? match.id : null,\n  owner_email: match ? (match.fields ? match.fields['Owner Email'] : match['Owner Email']) : null,\n  ghl_contact_id: match ? (match.fields ? match.fields['GHL Contact ID'] : match['GHL Contact ID']) : null\n} }];"
+          },
+          "id": "normalize-company-match",
+          "name": "9b. Normalize Company Match",
+          "type": "n8n-nodes-base.code",
+          "typeVersion": 2,
+          "position": [
+            864,
+            -224
+          ]
+        },
+        {
+          "parameters": {
+            "conditions": {
+              "options": {
+                "caseSensitive": true,
+                "leftValue": "",
+                "typeValidation": "strict",
+                "version": 1
+              },
+              "conditions": [
+                {
+                  "id": "match-check",
+                  "leftValue": "={{ $json.matched }}",
+                  "rightValue": true,
+                  "operator": {
+                    "type": "boolean",
+                    "operation": "true",
+                    "singleValue": true
+                  }
+                }
+              ],
+              "combinator": "and"
+            },
+            "options": {}
+          },
+          "id": "is-matched",
+          "name": "10. Is Matched?",
+          "type": "n8n-nodes-base.if",
+          "typeVersion": 2,
+          "position": [
+            1088,
+            -224
+          ]
+        },
+        {
+          "parameters": {
+            "operation": "update",
+            "base": {
+              "__rl": true,
+              "value": "appN6pxMbI5O2dpDj",
+              "mode": "id"
+            },
+            "table": {
+              "__rl": true,
+              "value": "tblaOwskQtlIW7jIC",
+              "mode": "id"
+            },
+            "columns": {
+              "mappingMode": "defineBelow",
+              "value": {
+                "id": "={{ $('6. Create Processing Row').item.json.id }}",
+                "Employee Name": "={{ $('8. Parse Claude JSON').item.json.employee_name }}",
+                "Process Name": "={{ $('8. Parse Claude JSON').item.json.process_name }}",
+                "Company Raw": "={{ $('8. Parse Claude JSON').item.json.company_name }}",
+                "Status": "Matched"
+              },
+              "matchingColumns": [
+                "id"
+              ],
+              "schema": []
+            },
+            "options": {}
+          },
+          "id": "finalize-matched",
+          "name": "11a. Finalize Matched",
+          "type": "n8n-nodes-base.airtable",
+          "typeVersion": 2.1,
+          "position": [
+            1312,
+            -320
+          ],
+          "credentials": {
+            "airtableTokenApi": {
+              "id": "JHtVTjVx4RVh3iEJ",
+              "name": "DadaAI Airtable"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "operation": "update",
+            "base": {
+              "__rl": true,
+              "value": "appN6pxMbI5O2dpDj",
+              "mode": "id"
+            },
+            "table": {
+              "__rl": true,
+              "value": "tblaOwskQtlIW7jIC",
+              "mode": "id"
+            },
+            "columns": {
+              "mappingMode": "defineBelow",
+              "value": {
+                "id": "={{ $('6. Create Processing Row').item.json.id }}",
+                "Employee Name": "={{ $('8. Parse Claude JSON').item.json.employee_name }}",
+                "Process Name": "={{ $('8. Parse Claude JSON').item.json.process_name }}",
+                "Company Raw": "={{ $('8. Parse Claude JSON').item.json.company_name }}",
+                "Status": "Unmatched"
+              },
+              "matchingColumns": [
+                "id"
+              ],
+              "schema": []
+            },
+            "options": {}
+          },
+          "id": "finalize-unmatched",
+          "name": "11b. Finalize Unmatched",
+          "type": "n8n-nodes-base.airtable",
+          "typeVersion": 2.1,
+          "position": [
+            1312,
+            -128
+          ],
+          "credentials": {
+            "airtableTokenApi": {
+              "id": "JHtVTjVx4RVh3iEJ",
+              "name": "DadaAI Airtable"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "method": "POST",
+            "url": "https://services.leadconnectorhq.com/conversations/messages",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "httpHeaderAuth",
+            "sendHeaders": true,
+            "headerParameters": {
+              "parameters": [
+                {
+                  "name": "Version",
+                  "value": "2021-07-28"
+                },
+                {
+                  "name": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            "sendBody": true,
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({\n  type: \"Email\",\n  contactId: $('9b. Normalize Company Match').item.json.ghl_contact_id,\n  subject: \"New SOP Ready: \" + $('8. Parse Claude JSON').item.json.process_name + \" â€” \" + $('8. Parse Claude JSON').item.json.employee_name,\n  html: \"<p>A new SOP has been generated.</p><p>Process: \" + $('8. Parse Claude JSON').item.json.process_name + \"</p><p>Company: \" + $('8. Parse Claude JSON').item.json.company_name + \"</p><p><a href='https://docs.google.com/document/d/\" + $('16a. Copy Template Doc').item.json.id + \"/edit'>View SOP Document</a></p>\"\n}) }}",
+            "options": {}
+          },
+          "id": "owner-email-ghl",
+          "name": "12a. Owner Email (GHL)",
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.2,
+          "position": [
+            2656,
+            -320
+          ],
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 2000,
+          "credentials": {
+            "httpHeaderAuth": {
+              "id": "XwAF3EozOcKKFzjq",
+              "name": "DadaAI GHL"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "method": "POST",
+            "url": "https://services.leadconnectorhq.com/conversations/messages",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "httpHeaderAuth",
+            "sendHeaders": true,
+            "headerParameters": {
+              "parameters": [
+                {
+                  "name": "Version",
+                  "value": "2021-07-28"
+                },
+                {
+                  "name": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            "sendBody": true,
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({\n  type: \"Email\",\n  contactId: \"FGRKMuONxezAC6d940BJ\",\n  subject: \"ACTION REQUIRED â€” SOPBot: Unmatched Company on Call\",\n  html: \"<p>Unmatched company on a SOPBot call.</p><p>Raw name: \" + $('8. Parse Claude JSON').item.json.company_name + \"</p><p>Employee: \" + $('8. Parse Claude JSON').item.json.employee_name + \"</p><p>Process: \" + $('8. Parse Claude JSON').item.json.process_name + \"</p><p>Call ID: \" + $('3. Parse Vapi Payload').item.json.call_id + \"</p><p><a href='https://docs.google.com/document/d/\" + $('16b. Copy Template Doc (Unmatched)').item.json.id + \"/edit'>View SOP Document (Unmatched folder)</a></p>\"\n}) }}",
+            "options": {}
+          },
+          "id": "ops-alert-ghl",
+          "name": "12b. Ops Alert (GHL)",
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.2,
+          "position": [
+            2656,
+            -128
+          ],
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 2000,
+          "credentials": {
+            "httpHeaderAuth": {
+              "id": "XwAF3EozOcKKFzjq",
+              "name": "DadaAI GHL"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "jsCode": "const data = $input.first().json;\nconst company = (data.company_name || '').trim();\n// Strip common legal suffixes so 'Acme Inc' and 'Acme' match the same\n// client record - see docs/adr or session notes on the company-name\n// matching fix. Used by both the Airtable Company Router formula and\n// the Supabase client lookup (18c), so both branches match consistently.\nconst companyNormalized = company.toLowerCase().replace(/\\s*[,.]?\\s*(inc|llc|ltd|corp|co|company)\\.?\\s*$/, '').trim();\nconst steps = Array.isArray(data.steps) ? data.steps : [];\nconst isLowQuality = !company || company.toLowerCase() === 'unknown' || steps.length === 0;\nreturn [{ json: { ...data, company_name: company, company_name_normalized: companyNormalized, _low_quality: isLowQuality, _quality_reason: isLowQuality ? ('Claude extraction produced insufficient data: company=' + JSON.stringify(company) + ', steps=' + steps.length) : null } }];"
+          },
+          "id": "validate-extraction-quality",
+          "name": "8b. Validate Extraction Quality",
+          "type": "n8n-nodes-base.code",
+          "typeVersion": 2,
+          "position": [
+            192,
+            -128
+          ]
+        },
+        {
+          "parameters": {
+            "conditions": {
+              "options": {
+                "caseSensitive": true,
+                "leftValue": "",
+                "typeValidation": "strict",
+                "version": 1
+              },
+              "conditions": [
+                {
+                  "id": "quality-check",
+                  "leftValue": "={{ $json._low_quality }}",
+                  "rightValue": true,
+                  "operator": {
+                    "type": "boolean",
+                    "operation": "true",
+                    "singleValue": true
+                  }
+                }
+              ],
+              "combinator": "and"
+            },
+            "options": {}
+          },
+          "id": "is-low-quality",
+          "name": "8c. Is Low Quality?",
+          "type": "n8n-nodes-base.if",
+          "typeVersion": 2,
+          "position": [
+            416,
+            -128
+          ]
+        },
+        {
+          "parameters": {
+            "operation": "update",
+            "base": {
+              "__rl": true,
+              "value": "appN6pxMbI5O2dpDj",
+              "mode": "id"
+            },
+            "table": {
+              "__rl": true,
+              "value": "tblaOwskQtlIW7jIC",
+              "mode": "id"
+            },
+            "columns": {
+              "mappingMode": "defineBelow",
+              "value": {
+                "id": "={{ $('6. Create Processing Row').item.json.id }}",
+                "Status": "Error",
+                "Error Detail": "={{ $json._quality_reason }}"
+              },
+              "matchingColumns": [
+                "id"
+              ],
+              "schema": []
+            },
+            "options": {}
+          },
+          "id": "finalize-low-quality",
+          "name": "8d. Finalize Low Quality",
+          "type": "n8n-nodes-base.airtable",
+          "typeVersion": 2.1,
+          "position": [
+            640,
+            -32
+          ],
+          "credentials": {
+            "airtableTokenApi": {
+              "id": "JHtVTjVx4RVh3iEJ",
+              "name": "DadaAI Airtable"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "jsCode": "const NL = String.fromCharCode(10);\nconst data = $('8. Parse Claude JSON').item.json;\n\nfunction esc(s) { return (s === null || s === undefined) ? '' : String(s); }\n\nconst stepsBlock = (data.steps || []).map(function(s) {\n  const tools = (s.tools_used || []).join(', ') || 'None specified';\n  const notes = [].concat(s.decision_points || [], s.pain_points || [], s.common_errors || []).map(function(x){ return typeof x === 'string' ? x : JSON.stringify(x); }).join('; ') || 'None';\n  const done = s.completion_indicator || 'Not specified';\n  const parts = [\n    'Step ' + s.step_number + ': ' + esc(s.action || s.title),\n    'Tools: ' + tools,\n    'Notes: ' + notes,\n    'Done when: ' + done\n  ];\n  return parts.join(NL);\n}).join(NL + NL);\n\nconst toolsSet = new Set();\n(data.steps || []).forEach(function(s) { (s.tools_used || []).forEach(function(t) { toolsSet.add(t); }); });\n(data.tools_and_resources || []).forEach(function(t) { toolsSet.add(t); });\nconst toolsList = Array.from(toolsSet).join(', ') || 'None specified';\n\nconst exceptionHandling = (data.exception_handling || []).length\n  ? data.exception_handling.map(function(e) {\n      return typeof e === 'string' ? e : ('If ' + (e.if || e.condition) + ': ' + (e.then || e.action));\n    }).join(NL)\n  : 'None captured during this call.';\n\nconst today = new Date().toISOString().slice(0, 10);\n\nreturn [{\n  json: {\n    doc_name: esc(data.employee_name) + ' - ' + esc(data.process_name),\n    tokens: {\n      '{{COMPANY_NAME}}': esc(data.company_name),\n      '{{PROCESS_NAME}}': esc(data.process_name),\n      '{{EMPLOYEE_ROLE}}': esc(data.employee_role),\n      '{{EMPLOYEE_NAME}}': esc(data.employee_name),\n      '{{EMPLOYEE_TENURE}}': esc(data.employee_tenure),\n      '{{DATE}}': today,\n      '{{PROCESS_FREQUENCY}}': esc(data.frequency || data.process_frequency),\n      '{{ROLE_SUMMARY}}': esc(data.role_summary),\n      '{{PROCESS_TRIGGER}}': esc(data.process_trigger),\n      '{{TOOLS_LIST}}': toolsList,\n      '{{STEPS_BLOCK}}': stepsBlock || 'No steps captured.',\n      '{{EXCEPTION_HANDLING}}': exceptionHandling,\n      '{{COMPLETION_CRITERIA}}': esc(data.completion_criteria),\n      '{{INSIDER_NOTES}}': esc(data.insider_notes || data.notes)\n    }\n  }\n}];\n"
+          },
+          "id": "prepare-doc-fields-matched",
+          "name": "14a. Prepare Doc Fields (Matched)",
+          "type": "n8n-nodes-base.code",
+          "typeVersion": 2,
+          "position": [
+            1536,
+            -320
+          ]
+        },
+        {
+          "parameters": {
+            "jsCode": "const NL = String.fromCharCode(10);\nconst data = $('8. Parse Claude JSON').item.json;\n\nfunction esc(s) { return (s === null || s === undefined) ? '' : String(s); }\n\nconst stepsBlock = (data.steps || []).map(function(s) {\n  const tools = (s.tools_used || []).join(', ') || 'None specified';\n  const notes = [].concat(s.decision_points || [], s.pain_points || [], s.common_errors || []).map(function(x){ return typeof x === 'string' ? x : JSON.stringify(x); }).join('; ') || 'None';\n  const done = s.completion_indicator || 'Not specified';\n  const parts = [\n    'Step ' + s.step_number + ': ' + esc(s.action || s.title),\n    'Tools: ' + tools,\n    'Notes: ' + notes,\n    'Done when: ' + done\n  ];\n  return parts.join(NL);\n}).join(NL + NL);\n\nconst toolsSet = new Set();\n(data.steps || []).forEach(function(s) { (s.tools_used || []).forEach(function(t) { toolsSet.add(t); }); });\n(data.tools_and_resources || []).forEach(function(t) { toolsSet.add(t); });\nconst toolsList = Array.from(toolsSet).join(', ') || 'None specified';\n\nconst exceptionHandling = (data.exception_handling || []).length\n  ? data.exception_handling.map(function(e) {\n      return typeof e === 'string' ? e : ('If ' + (e.if || e.condition) + ': ' + (e.then || e.action));\n    }).join(NL)\n  : 'None captured during this call.';\n\nconst today = new Date().toISOString().slice(0, 10);\n\nreturn [{\n  json: {\n    doc_name: esc(data.employee_name) + ' - ' + esc(data.process_name),\n    tokens: {\n      '{{COMPANY_NAME}}': esc(data.company_name),\n      '{{PROCESS_NAME}}': esc(data.process_name),\n      '{{EMPLOYEE_ROLE}}': esc(data.employee_role),\n      '{{EMPLOYEE_NAME}}': esc(data.employee_name),\n      '{{EMPLOYEE_TENURE}}': esc(data.employee_tenure),\n      '{{DATE}}': today,\n      '{{PROCESS_FREQUENCY}}': esc(data.frequency || data.process_frequency),\n      '{{ROLE_SUMMARY}}': esc(data.role_summary),\n      '{{PROCESS_TRIGGER}}': esc(data.process_trigger),\n      '{{TOOLS_LIST}}': toolsList,\n      '{{STEPS_BLOCK}}': stepsBlock || 'No steps captured.',\n      '{{EXCEPTION_HANDLING}}': exceptionHandling,\n      '{{COMPLETION_CRITERIA}}': esc(data.completion_criteria),\n      '{{INSIDER_NOTES}}': esc(data.insider_notes || data.notes)\n    }\n  }\n}];\n"
+          },
+          "id": "prepare-doc-fields-unmatched",
+          "name": "14b. Prepare Doc Fields (Unmatched)",
+          "type": "n8n-nodes-base.code",
+          "typeVersion": 2,
+          "position": [
+            1536,
+            -128
+          ]
+        },
+        {
+          "parameters": {
+            "method": "POST",
+            "url": "https://www.googleapis.com/drive/v3/files/1SuH6mrJmSmHFQ-PW5mcjDKGozVrBwSdE1sPwAnkaT4M/copy",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "googleDriveOAuth2Api",
+            "sendBody": true,
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({ name: $json.doc_name, parents: [$('15e. Resolve Company Folder ID').item.json.company_folder_id] }) }}\n",
+            "options": {}
+          },
+          "id": "copy-template-matched",
+          "name": "16a. Copy Template Doc",
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.2,
+          "position": [
+            1760,
+            -320
+          ],
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 2000,
+          "credentials": {
+            "googleDriveOAuth2Api": {
+              "id": "HsauKIhtNk1nzT6a",
+              "name": "DadaAI Google Drive OAuth2"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "method": "POST",
+            "url": "https://www.googleapis.com/drive/v3/files/1SuH6mrJmSmHFQ-PW5mcjDKGozVrBwSdE1sPwAnkaT4M/copy",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "googleDriveOAuth2Api",
+            "sendBody": true,
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({ name: $json.doc_name, parents: [$('15e. Resolve Company Folder ID').item.json.company_folder_id] }) }}\n",
+            "options": {}
+          },
+          "id": "copy-template-unmatched",
+          "name": "16b. Copy Template Doc (Unmatched)",
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.2,
+          "position": [
+            1760,
+            -128
+          ],
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 2000,
+          "credentials": {
+            "googleDriveOAuth2Api": {
+              "id": "HsauKIhtNk1nzT6a",
+              "name": "DadaAI Google Drive OAuth2"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "method": "POST",
+            "url": "={{ 'https://docs.googleapis.com/v1/documents/' + $('16a. Copy Template Doc').item.json.id + ':batchUpdate' }}",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "googleDocsOAuth2Api",
+            "sendBody": true,
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({ requests: Object.entries($('14a. Prepare Doc Fields (Matched)').item.json.tokens).map(([token, value]) => ({ replaceAllText: { containsText: { text: token, matchCase: true }, replaceText: value } })) }) }}",
+            "options": {}
+          },
+          "id": "populate-doc-matched",
+          "name": "17a. Populate Doc Tokens",
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.2,
+          "position": [
+            2208,
+            -320
+          ],
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 2000,
+          "credentials": {
+            "googleDocsOAuth2Api": {
+              "id": "qrPo0SgXYZGJmTMY",
+              "name": "DadaAI Google Docs OAuth2"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "method": "POST",
+            "url": "={{ 'https://docs.googleapis.com/v1/documents/' + $('16b. Copy Template Doc (Unmatched)').item.json.id + ':batchUpdate' }}",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "googleDocsOAuth2Api",
+            "sendBody": true,
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({ requests: Object.entries($('14b. Prepare Doc Fields (Unmatched)').item.json.tokens).map(([token, value]) => ({ replaceAllText: { containsText: { text: token, matchCase: true }, replaceText: value } })) }) }}",
+            "options": {}
+          },
+          "id": "populate-doc-unmatched",
+          "name": "17b. Populate Doc Tokens (Unmatched)",
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.2,
+          "position": [
+            2208,
+            -128
+          ],
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 2000,
+          "credentials": {
+            "googleDocsOAuth2Api": {
+              "id": "qrPo0SgXYZGJmTMY",
+              "name": "DadaAI Google Docs OAuth2"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "operation": "update",
+            "base": {
+              "__rl": true,
+              "value": "appN6pxMbI5O2dpDj",
+              "mode": "id"
+            },
+            "table": {
+              "__rl": true,
+              "value": "tblaOwskQtlIW7jIC",
+              "mode": "id"
+            },
+            "columns": {
+              "mappingMode": "defineBelow",
+              "value": {
+                "id": "={{ $('6. Create Processing Row').item.json.id }}",
+                "SOP Doc URL": "={{ 'https://docs.google.com/document/d/' + $('16a. Copy Template Doc').item.json.id + '/edit' }}"
+              },
+              "matchingColumns": [
+                "id"
+              ],
+              "schema": []
+            },
+            "options": {}
+          },
+          "id": "patch-doc-url-matched",
+          "name": "18a. Patch SOP Doc URL",
+          "type": "n8n-nodes-base.airtable",
+          "typeVersion": 2.1,
+          "position": [
+            2432,
+            -320
+          ],
+          "credentials": {
+            "airtableTokenApi": {
+              "id": "JHtVTjVx4RVh3iEJ",
+              "name": "DadaAI Airtable"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "operation": "update",
+            "base": {
+              "__rl": true,
+              "value": "appN6pxMbI5O2dpDj",
+              "mode": "id"
+            },
+            "table": {
+              "__rl": true,
+              "value": "tblaOwskQtlIW7jIC",
+              "mode": "id"
+            },
+            "columns": {
+              "mappingMode": "defineBelow",
+              "value": {
+                "id": "={{ $('6. Create Processing Row').item.json.id }}",
+                "SOP Doc URL": "={{ 'https://docs.google.com/document/d/' + $('16b. Copy Template Doc (Unmatched)').item.json.id + '/edit' }}"
+              },
+              "matchingColumns": [
+                "id"
+              ],
+              "schema": []
+            },
+            "options": {}
+          },
+          "id": "patch-doc-url-unmatched",
+          "name": "18b. Patch SOP Doc URL (Unmatched)",
+          "type": "n8n-nodes-base.airtable",
+          "typeVersion": 2.1,
+          "position": [
+            2432,
+            -128
+          ],
+          "credentials": {
+            "airtableTokenApi": {
+              "id": "JHtVTjVx4RVh3iEJ",
+              "name": "DadaAI Airtable"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "conditions": {
+              "options": {
+                "caseSensitive": true,
+                "leftValue": "",
+                "typeValidation": "loose",
+                "version": 1
+              },
+              "conditions": [
+                {
+                  "leftValue": "={{ $('8. Parse Claude JSON').item.json.employee_email }}",
+                  "rightValue": "",
+                  "operator": {
+                    "type": "string",
+                    "operation": "notEmpty",
+                    "singleValue": true
+                  }
+                }
+              ],
+              "combinator": "and"
+            },
+            "options": {}
+          },
+          "id": "sopbot-has-employee-email-gate",
+          "name": "12e. Has Employee Email?",
+          "type": "n8n-nodes-base.if",
+          "typeVersion": 2.2,
+          "position": [
+            3328,
+            -320
+          ]
+        },
+        {
+          "parameters": {
+            "method": "POST",
+            "url": "https://services.leadconnectorhq.com/contacts/upsert",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "httpHeaderAuth",
+            "sendHeaders": true,
+            "headerParameters": {
+              "parameters": [
+                {
+                  "name": "Version",
+                  "value": "2021-07-28"
+                },
+                {
+                  "name": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            "sendBody": true,
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({\n  locationId: \"HlI90j86nBEuhp9Oovf9\",\n  email: $('8. Parse Claude JSON').item.json.employee_email,\n  name: $('8. Parse Claude JSON').item.json.employee_name,\n  source: \"SOPBot call\"\n}) }}",
+            "options": {}
+          },
+          "id": "sopbot-employee-contact-upsert",
+          "name": "12c. Upsert Employee Contact (GHL)",
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.2,
+          "position": [
+            3552,
+            -320
+          ],
+          "credentials": {
+            "httpHeaderAuth": {
+              "id": "XwAF3EozOcKKFzjq",
+              "name": "DadaAI GHL"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "method": "POST",
+            "url": "https://services.leadconnectorhq.com/conversations/messages",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "httpHeaderAuth",
+            "sendHeaders": true,
+            "headerParameters": {
+              "parameters": [
+                {
+                  "name": "Version",
+                  "value": "2021-07-28"
+                },
+                {
+                  "name": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            "sendBody": true,
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({\n  type: \"Email\",\n  contactId: $json.contact.id,\n  subject: \"Your SOP is ready: \" + $('8. Parse Claude JSON').item.json.process_name,\n  html: \"<p>Hi \" + $('8. Parse Claude JSON').item.json.employee_name + \",</p><p>Thanks for walking through your process on the call. Here's the SOP that was generated from it:</p><p><a href='https://docs.google.com/document/d/\" + $('16a. Copy Template Doc').item.json.id + \"/edit'>View your SOP</a></p><p>You can also see it in your team's SOPBot dashboard.</p>\"\n}) }}",
+            "options": {}
+          },
+          "id": "sopbot-employee-email-send",
+          "name": "12d. Employee Email (GHL)",
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.2,
+          "position": [
+            3776,
+            -320
+          ],
+          "credentials": {
+            "httpHeaderAuth": {
+              "id": "XwAF3EozOcKKFzjq",
+              "name": "DadaAI GHL"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "method": "POST",
+            "url": "={{ 'https://www.googleapis.com/drive/v3/files/' + $json.id + '/permissions' }}\n",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "googleDriveOAuth2Api",
+            "sendBody": true,
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({ role: 'reader', type: 'anyone' }) }}\n",
+            "options": {}
+          },
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.4,
+          "position": [
+            1984,
+            -320
+          ],
+          "id": "e95d6c76-6373-4cbb-a18f-05501a9bac42",
+          "name": "16a2. Share Doc (Anyone Reader)",
+          "credentials": {
+            "googleDriveOAuth2Api": {
+              "id": "HsauKIhtNk1nzT6a",
+              "name": "DadaAI Google Drive OAuth2"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "method": "POST",
+            "url": "={{ 'https://www.googleapis.com/drive/v3/files/' + $json.id + '/permissions' }}",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "googleDriveOAuth2Api",
+            "sendBody": true,
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({ role: 'reader', type: 'anyone' }) }}",
+            "options": {}
+          },
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.4,
+          "position": [
+            1984,
+            -128
+          ],
+          "id": "e5263e70-c329-41dc-8a0d-04b7e7d79f6e",
+          "name": "16b2. Share Doc (Anyone Reader, Unmatched)",
+          "credentials": {
+            "googleDriveOAuth2Api": {
+              "id": "HsauKIhtNk1nzT6a",
+              "name": "DadaAI Google Drive OAuth2"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "method": "POST",
+            "url": "https://services.leadconnectorhq.com/contacts/upsert",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "httpHeaderAuth",
+            "sendHeaders": true,
+            "headerParameters": {
+              "parameters": [
+                {
+                  "name": "Version",
+                  "value": "2021-07-28"
+                },
+                {
+                  "name": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            "sendBody": true,
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({ locationId: \"HlI90j86nBEuhp9Oovf9\", email: \"dwayne@digital-dada.com\", name: \"Dwayne\", source: \"SOPBot ops notification\" }) }}\n",
+            "options": {}
+          },
+          "id": "d2cca60d-a3bd-44a5-a163-75bb78407ef9",
+          "name": "12f. Upsert Dwayne Contact (GHL)",
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.2,
+          "position": [
+            2880,
+            -320
+          ],
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 2000,
+          "credentials": {
+            "httpHeaderAuth": {
+              "id": "XwAF3EozOcKKFzjq",
+              "name": "DadaAI GHL"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "method": "POST",
+            "url": "https://services.leadconnectorhq.com/conversations/messages",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "httpHeaderAuth",
+            "sendHeaders": true,
+            "headerParameters": {
+              "parameters": [
+                {
+                  "name": "Version",
+                  "value": "2021-07-28"
+                },
+                {
+                  "name": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            "sendBody": true,
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({ type: \"Email\", contactId: $json.contact.id, subject: \"SOPBot call completed: \" + $('8. Parse Claude JSON').item.json.process_name, html: \"<p>A SOPBot call just completed.</p><p>Company: \" + $('8. Parse Claude JSON').item.json.company_name + \"</p><p>Employee: \" + $('8. Parse Claude JSON').item.json.employee_name + \"</p><p>Process: \" + $('8. Parse Claude JSON').item.json.process_name + \"</p><p><a href='https://docs.google.com/document/d/\" + $('16a. Copy Template Doc').item.json.id + \"/edit'>View SOP Document</a></p>\" }) }}\n",
+            "options": {}
+          },
+          "id": "dd094ac3-5a94-4369-83ae-bc2da42e7f36",
+          "name": "12g. Dwayne Notification (GHL)",
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.2,
+          "position": [
+            3104,
+            -320
+          ],
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 2000,
+          "credentials": {
+            "httpHeaderAuth": {
+              "id": "XwAF3EozOcKKFzjq",
+              "name": "DadaAI GHL"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "resource": "row",
+            "operation": "getAll",
+            "tableId": "clients",
+            "returnAll": false,
+            "limit": 1,
+            "filters": {
+              "conditions": [
+                {
+                  "keyName": "client_name",
+                  "condition": "ilike",
+                  "keyValue": "={{ $('8b. Validate Extraction Quality').item.json.company_name_normalized }}"
+                }
+              ]
+            }
+          },
+          "id": "18c-find-supabase-client",
+          "name": "18c. Find Supabase Client",
+          "type": "n8n-nodes-base.supabase",
+          "typeVersion": 1,
+          "position": [
+            2544,
+            -400
+          ],
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 2000,
+          "credentials": {
+            "supabaseApi": {
+              "id": "LcjvXxI8vq81hOBq",
+              "name": "DadaAI Supabase (native)"
+            }
+          },
+          "onError": "continueRegularOutput"
+        },
+        {
+          "parameters": {
+            "resource": "row",
+            "operation": "create",
+            "tableId": "calls_log",
+            "dataToSend": "defineBelow",
+            "fieldsUi": {
+              "fieldValues": [
+                {
+                  "fieldId": "client_id",
+                  "fieldValue": "={{ $json.id }}"
+                },
+                {
+                  "fieldId": "call_id",
+                  "fieldValue": "={{ $('3. Parse Vapi Payload').item.json.call_id }}"
+                },
+                {
+                  "fieldId": "process_name",
+                  "fieldValue": "={{ $('8. Parse Claude JSON').item.json.process_name }}"
+                },
+                {
+                  "fieldId": "employee_name",
+                  "fieldValue": "={{ $('8. Parse Claude JSON').item.json.employee_name }}"
+                },
+                {
+                  "fieldId": "sop_doc_url",
+                  "fieldValue": "={{ 'https://docs.google.com/document/d/' + $('16a. Copy Template Doc').item.json.id + '/edit' }}"
+                },
+                {
+                  "fieldId": "status",
+                  "fieldValue": "Complete"
+                }
+              ]
+            }
+          },
+          "id": "18d-insert-supabase-call-log",
+          "name": "18d. Insert Supabase Call Log",
+          "type": "n8n-nodes-base.supabase",
+          "typeVersion": 1,
+          "position": [
+            2544,
+            -240
+          ],
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 2000,
+          "credentials": {
+            "supabaseApi": {
+              "id": "LcjvXxI8vq81hOBq",
+              "name": "DadaAI Supabase (native)"
+            }
+          },
+          "onError": "continueRegularOutput"
+        },
+        {
+          "parameters": {
+            "method": "POST",
+            "url": "https://ypxvhajzbhjugtrmtomf.supabase.co/rest/v1/rpc/increment_sop_credits_used",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "supabaseApi",
+            "sendBody": true,
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({ client_id_input: $('18c. Find Supabase Client').item.json.id }) }}",
+            "options": {}
+          },
+          "id": "18e-increment-credit",
+          "name": "18e. Increment Credit Used",
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.2,
+          "position": [
+            2544,
+            -160
+          ],
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 2000,
+          "credentials": {
+            "supabaseApi": {
+              "id": "LcjvXxI8vq81hOBq",
+              "name": "DadaAI Supabase (native)"
+            }
+          },
+          "onError": "continueRegularOutput"
+        },
+        {
+          "parameters": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/drive/v3/files",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "googleDriveOAuth2Api",
+            "sendQuery": true,
+            "queryParameters": {
+              "parameters": [
+                {
+                  "name": "q",
+                  "value": "=\"1Hn1CpdeMK0ikT8K52NSLosoo2689BZZJ\" in parents and mimeType = \"application/vnd.google-apps.folder\" and trashed = false"
+                },
+                {
+                  "name": "fields",
+                  "value": "files(id, name)"
+                },
+                {
+                  "name": "pageSize",
+                  "value": "1000"
+                }
+              ]
+            },
+            "options": {}
+          },
+          "id": "list-company-folders",
+          "name": "15a. List Company Folders",
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.2,
+          "position": [
+            1520,
+            -400
+          ],
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 2000,
+          "credentials": {
+            "googleDriveOAuth2Api": {
+              "id": "HsauKIhtNk1nzT6a",
+              "name": "DadaAI Google Drive OAuth2"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "jsCode": "// Same normalization as 8b.Validate Extraction Quality, applied here to\n// existing Drive folder names too, so \"Digital Dada\" and \"Digital Dada Inc\"\n// resolve to the same folder even though the folder itself keeps whatever\n// name the FIRST caller from that company used.\nfunction normalize(name) {\n  return (name || '').toLowerCase().trim()\n    .replace(/\\s*[,.]?\\s*(inc|llc|ltd|corp|co|company)\\.?\\s*$/, '').trim();\n}\nconst targetNormalized = $('8b. Validate Extraction Quality').item.json.company_name_normalized;\nconst folders = $json.files || [];\nconst found = folders.find(function(f) { return normalize(f.name) === targetNormalized; });\nreturn [{ json: {\n  folder_found: !!found,\n  company_folder_id: found ? found.id : null,\n  company_name_raw: $('8b. Validate Extraction Quality').item.json.company_name\n} }];"
+          },
+          "id": "match-company-folder",
+          "name": "15b. Match Company Folder",
+          "type": "n8n-nodes-base.code",
+          "typeVersion": 2,
+          "position": [
+            1640,
+            -400
+          ]
+        },
+        {
+          "parameters": {
+            "conditions": {
+              "options": {
+                "caseSensitive": true,
+                "leftValue": "",
+                "typeValidation": "strict",
+                "version": 1
+              },
+              "conditions": [
+                {
+                  "id": "folder-found",
+                  "leftValue": "={{ $json.folder_found }}",
+                  "rightValue": true,
+                  "operator": {
+                    "type": "boolean",
+                    "operation": "true",
+                    "singleValue": true
+                  }
+                }
+              ],
+              "combinator": "and"
+            },
+            "options": {}
+          },
+          "id": "is-folder-found",
+          "name": "15c. Folder Exists?",
+          "type": "n8n-nodes-base.if",
+          "typeVersion": 2.2,
+          "position": [
+            1760,
+            -400
+          ]
+        },
+        {
+          "parameters": {
+            "method": "POST",
+            "url": "https://www.googleapis.com/drive/v3/files",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "googleDriveOAuth2Api",
+            "sendBody": true,
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({ name: $json.company_name_raw, mimeType: 'application/vnd.google-apps.folder', parents: ['1Hn1CpdeMK0ikT8K52NSLosoo2689BZZJ'] }) }}",
+            "options": {}
+          },
+          "id": "create-company-folder",
+          "name": "15d. Create Company Folder",
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.2,
+          "position": [
+            1880,
+            -320
+          ],
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 2000,
+          "credentials": {
+            "googleDriveOAuth2Api": {
+              "id": "HsauKIhtNk1nzT6a",
+              "name": "DadaAI Google Drive OAuth2"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "jsCode": "// Merges both branches (an existing folder found in 15b, or one just\n// created in 15d) into one consistent field for 16a/16b to consume.\nconst item = $input.first().json;\nconst folderId = item.company_folder_id || item.id;\nreturn [{ json: { company_folder_id: folderId } }];"
+          },
+          "id": "resolve-company-folder-id",
+          "name": "15e. Resolve Company Folder ID",
+          "type": "n8n-nodes-base.code",
+          "typeVersion": 2,
+          "position": [
+            2000,
+            -360
+          ]
+        }
+      ],
+      "connections": {
+        "1. Webhook Trigger": {
+          "main": [
+            [
+              {
+                "node": "3. Parse Vapi Payload",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "3. Parse Vapi Payload": {
+          "main": [
+            [
+              {
+                "node": "4. Idempotency Check",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "4. Idempotency Check": {
+          "main": [
+            [
+              {
+                "node": "4b. Normalize Idempotency Result",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "4b. Normalize Idempotency Result": {
+          "main": [
+            [
+              {
+                "node": "5. Is Duplicate?",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "5. Is Duplicate?": {
+          "main": [
+            [],
+            [
+              {
+                "node": "6. Create Processing Row",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "6. Create Processing Row": {
+          "main": [
+            [
+              {
+                "node": "7. Claude Extraction",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "7. Claude Extraction": {
+          "main": [
+            [
+              {
+                "node": "8. Parse Claude JSON",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "8. Parse Claude JSON": {
+          "main": [
+            [
+              {
+                "node": "8b. Validate Extraction Quality",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "9. Company Router": {
+          "main": [
+            [
+              {
+                "node": "9b. Normalize Company Match",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "9b. Normalize Company Match": {
+          "main": [
+            [
+              {
+                "node": "15a. List Company Folders",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "10. Is Matched?": {
+          "main": [
+            [
+              {
+                "node": "11a. Finalize Matched",
+                "type": "main",
+                "index": 0
+              }
+            ],
+            [
+              {
+                "node": "11b. Finalize Unmatched",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "11a. Finalize Matched": {
+          "main": [
+            [
+              {
+                "node": "14a. Prepare Doc Fields (Matched)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "11b. Finalize Unmatched": {
+          "main": [
+            [
+              {
+                "node": "14b. Prepare Doc Fields (Unmatched)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "12a. Owner Email (GHL)": {
+          "main": [
+            [
+              {
+                "node": "12f. Upsert Dwayne Contact (GHL)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "12b. Ops Alert (GHL)": {
+          "main": [
+            []
+          ]
+        },
+        "8b. Validate Extraction Quality": {
+          "main": [
+            [
+              {
+                "node": "8c. Is Low Quality?",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "8c. Is Low Quality?": {
+          "main": [
+            [
+              {
+                "node": "8d. Finalize Low Quality",
+                "type": "main",
+                "index": 0
+              }
+            ],
+            [
+              {
+                "node": "9. Company Router",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "8d. Finalize Low Quality": {
+          "main": [
+            []
+          ]
+        },
+        "14a. Prepare Doc Fields (Matched)": {
+          "main": [
+            [
+              {
+                "node": "16a. Copy Template Doc",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "16a. Copy Template Doc": {
+          "main": [
+            [
+              {
+                "node": "16a2. Share Doc (Anyone Reader)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "17a. Populate Doc Tokens": {
+          "main": [
+            [
+              {
+                "node": "18a. Patch SOP Doc URL",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "14b. Prepare Doc Fields (Unmatched)": {
+          "main": [
+            [
+              {
+                "node": "16b. Copy Template Doc (Unmatched)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "16b. Copy Template Doc (Unmatched)": {
+          "main": [
+            [
+              {
+                "node": "16b2. Share Doc (Anyone Reader, Unmatched)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "17b. Populate Doc Tokens (Unmatched)": {
+          "main": [
+            [
+              {
+                "node": "18b. Patch SOP Doc URL (Unmatched)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "18a. Patch SOP Doc URL": {
+          "main": [
+            [
+              {
+                "node": "18c. Find Supabase Client",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "18b. Patch SOP Doc URL (Unmatched)": {
+          "main": [
+            [
+              {
+                "node": "12b. Ops Alert (GHL)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "12e. Has Employee Email?": {
+          "main": [
+            [
+              {
+                "node": "12c. Upsert Employee Contact (GHL)",
+                "type": "main",
+                "index": 0
+              }
+            ],
+            []
+          ]
+        },
+        "12c. Upsert Employee Contact (GHL)": {
+          "main": [
+            [
+              {
+                "node": "12d. Employee Email (GHL)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "12d. Employee Email (GHL)": {
+          "main": [
+            []
+          ]
+        },
+        "16a2. Share Doc (Anyone Reader)": {
+          "main": [
+            [
+              {
+                "node": "17a. Populate Doc Tokens",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "16b2. Share Doc (Anyone Reader, Unmatched)": {
+          "main": [
+            [
+              {
+                "node": "17b. Populate Doc Tokens (Unmatched)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "12f. Upsert Dwayne Contact (GHL)": {
+          "main": [
+            [
+              {
+                "node": "12g. Dwayne Notification (GHL)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "12g. Dwayne Notification (GHL)": {
+          "main": [
+            [
+              {
+                "node": "12e. Has Employee Email?",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "18c. Find Supabase Client": {
+          "main": [
+            [
+              {
+                "node": "18d. Insert Supabase Call Log",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "18d. Insert Supabase Call Log": {
+          "main": [
+            [
+              {
+                "node": "18e. Increment Credit Used",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "18e. Increment Credit Used": {
+          "main": [
+            [
+              {
+                "node": "12a. Owner Email (GHL)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "15a. List Company Folders": {
+          "main": [
+            [
+              {
+                "node": "15b. Match Company Folder",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "15b. Match Company Folder": {
+          "main": [
+            [
+              {
+                "node": "15c. Folder Exists?",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "15c. Folder Exists?": {
+          "main": [
+            [
+              {
+                "node": "15e. Resolve Company Folder ID",
+                "type": "main",
+                "index": 0
+              }
+            ],
+            [
+              {
+                "node": "15d. Create Company Folder",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "15d. Create Company Folder": {
+          "main": [
+            [
+              {
+                "node": "15e. Resolve Company Folder ID",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "15e. Resolve Company Folder ID": {
+          "main": [
+            [
+              {
+                "node": "10. Is Matched?",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "nodeGroups": [],
+      "authors": "Stuti Gohil",
+      "name": null,
+      "description": null,
+      "autosaved": false,
+      "workflowPublishHistory": [
+        {
+          "createdAt": "2026-09-22T11:54:55.596Z",
+          "id": 167,
+          "workflowId": "fFboHgba81r265CZ",
+          "versionId": "93d8f2f3-4571-42ef-bf77-92027cd37ea7",
+          "event": "deactivated",
+          "userId": "659411d0-00f4-4312-ba4e-31648993ba9d"
+        },
+        {
+          "createdAt": "2026-09-22T11:54:55.672Z",
+          "id": 168,
+          "workflowId": "fFboHgba81r265CZ",
+          "versionId": "93d8f2f3-4571-42ef-bf77-92027cd37ea7",
+          "event": "activated",
+          "userId": "659411d0-00f4-4312-ba4e-31648993ba9d"
+        }
+      ]
     }
   }
 ]
