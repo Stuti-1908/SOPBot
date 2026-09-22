@@ -32,13 +32,13 @@
   </div>
   {% if account.sop_credits_remaining == 0 %}
   <p class="caption">You're out of credits.</p>
-  <form method="POST" action="https://sop-bot-h57s.vercel.app/checkout/sopbot_topup?email={{ account.contact_email | urlencode }}">
-    <button type="submit" class="btn btn-primary">Buy 1 more credit — $49</button>
+  <form method="POST" action="https://sop-bot-h57s.vercel.app/checkout/sopbot_single?email={{ account.contact_email | urlencode }}">
+    <button type="submit" class="btn btn-primary">Buy 1 more credit — $37</button>
   </form>
   {% elif account.sop_credits_remaining <= 2 %}
   <p class="caption">Only {{ account.sop_credits_remaining }} credit(s) left.</p>
-  <form method="POST" action="https://sop-bot-h57s.vercel.app/checkout/sopbot_topup?email={{ account.contact_email | urlencode }}">
-    <button type="submit" class="btn">Top up — $49/credit</button>
+  <form method="POST" action="https://sop-bot-h57s.vercel.app/checkout/sopbot_single?email={{ account.contact_email | urlencode }}">
+    <button type="submit" class="btn">Top up — $37/credit</button>
   </form>
   {% endif %}
 </div>

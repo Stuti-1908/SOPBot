@@ -48,14 +48,7 @@ def create_checkout(product_id: str):
     kwargs = dict(
         mode="payment",
         line_items=[{
-            "price_data": {
-                "currency": "usd",
-                "unit_amount": product.amount_cents,
-                "product_data": {
-                    "name": product.name,
-                    "description": product.description,
-                },
-            },
+            "price": product.stripe_price_id,
             "quantity": 1,
         }],
         success_url=f"{PUBLIC_BASE_URL}/checkout/success?product={product.id}",

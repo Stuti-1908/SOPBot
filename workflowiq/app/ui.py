@@ -31,8 +31,9 @@ def render_ui() -> None:
     sops: list[SopInput] = []
 
     if mode == "Google Drive URL":
+        max_sops = int(os.getenv("MAX_SOPS_PER_RUN", 30))
         urls_raw = st.text_area(
-            "Google Doc URLs (one per line, max 8)",
+            f"Google Doc URLs (one per line, max {max_sops})",
             height=150,
             placeholder="https://docs.google.com/document/d/...",
         )
@@ -42,8 +43,8 @@ def render_ui() -> None:
             if not urls:
                 st.error("Paste at least one Google Doc URL.")
                 return
-            if len(urls) > int(os.getenv("MAX_SOPS_PER_RUN", 8)):
-                st.error(f"Maximum {os.getenv('MAX_SOPS_PER_RUN', 8)} SOPs per run.")
+            if len(urls) > max_sops:
+                st.error(f"Maximum {max_sops} SOPs per run.")
                 return
             with st.spinner("Fetching SOPs from Drive…"):
                 for url in urls:

@@ -16,62 +16,61 @@ class Product:
     description: str
     amount_cents: int
     category: str  # "sopbot_pack" | "workflowiq_report"
+    stripe_price_id: str  # real live-mode Stripe Price, referenced directly at checkout
     sop_credits: int | None = None  # only set for sopbot_pack products
 
 
 CATALOG: dict[str, Product] = {
-    "sopbot_starter": Product(
-        id="sopbot_starter",
-        name="SOPBot Starter Pack",
-        description="5 SOP call credits",
-        amount_cents=19900,
+    "sopbot_single": Product(
+        id="sopbot_single",
+        name="SOPBot | single unit",
+        description="1 SOP call credit",
+        amount_cents=3700,
         category="sopbot_pack",
-        sop_credits=5,
-    ),
-    "sopbot_team": Product(
-        id="sopbot_team",
-        name="SOPBot Team Pack",
-        description="15 SOP call credits",
-        amount_cents=49900,
-        category="sopbot_pack",
-        sop_credits=15,
-    ),
-    "sopbot_department": Product(
-        id="sopbot_department",
-        name="SOPBot Department Pack",
-        description="30 SOP call credits",
-        amount_cents=89900,
-        category="sopbot_pack",
-        sop_credits=30,
-    ),
-    "sopbot_topup": Product(
-        id="sopbot_topup",
-        name="SOPBot À la Carte Top-up",
-        description="1 additional SOP call credit",
-        amount_cents=4900,
-        category="sopbot_pack",
+        stripe_price_id="price_1UD7DrGZSzCmqf6TtE40Rfpv",
         sop_credits=1,
     ),
-    "workflowiq_single": Product(
-        id="workflowiq_single",
-        name="WorkflowIQ Single-SOP Report",
-        description="Process optimization report for 1 SOP",
-        amount_cents=9900,
-        category="workflowiq_report",
+    "sopbot_5pack": Product(
+        id="sopbot_5pack",
+        name="SOPBot | 5-pack",
+        description="5 SOP call credits",
+        amount_cents=12500,
+        category="sopbot_pack",
+        stripe_price_id="price_1UD7EoGZSzCmqf6Tez1UNOPb",
+        sop_credits=5,
     ),
-    "workflowiq_multi": Product(
-        id="workflowiq_multi",
-        name="WorkflowIQ Multi-SOP Report",
-        description="Process optimization report for up to 8 SOPs",
-        amount_cents=24900,
-        category="workflowiq_report",
+    "sopbot_15pack": Product(
+        id="sopbot_15pack",
+        name="SOPBot | 15-pack",
+        description="15 SOP call credits",
+        amount_cents=30000,
+        category="sopbot_pack",
+        stripe_price_id="price_1UD7FjGZSzCmqf6T4RdXmtEq",
+        sop_credits=15,
     ),
-    "workflowiq_rerun": Product(
-        id="workflowiq_rerun",
-        name="WorkflowIQ Report Re-run",
-        description="Updated report after process changes",
-        amount_cents=4900,
+    "workflowiq_up_to_5": Product(
+        id="workflowiq_up_to_5",
+        name="WorkflowIQ | Up to 5 SOPs",
+        description="Process optimization report for up to 5 SOPs",
+        amount_cents=9700,
         category="workflowiq_report",
+        stripe_price_id="price_1UD7JaGZSzCmqf6TATUQWaJy",
+    ),
+    "workflowiq_6_to_15": Product(
+        id="workflowiq_6_to_15",
+        name="WorkflowIQ | 6-15 SOPs",
+        description="Process optimization report for 6-15 SOPs",
+        amount_cents=19700,
+        category="workflowiq_report",
+        stripe_price_id="price_1UD7KhGZSzCmqf6TqAQWdpTr",
+    ),
+    "workflowiq_16_to_30": Product(
+        id="workflowiq_16_to_30",
+        name="WorkflowIQ | 16-30 SOPs",
+        description="Process optimization report for 16-30 SOPs",
+        amount_cents=34700,
+        category="workflowiq_report",
+        stripe_price_id="price_1UD7LaGZSzCmqf6TIuB0FeU1",
     ),
 }
 

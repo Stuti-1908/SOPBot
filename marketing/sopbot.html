@@ -123,53 +123,50 @@
 
     <div class="pricing-grid reveal-group">
       <div class="plan reveal">
-        <div class="plan-name">Starter</div>
+        <div class="plan-name">Single unit</div>
+        <div class="plan-desc">Try it out, or top up any time.</div>
+        <div class="plan-price"><span class="amount">$37</span></div>
+        <div class="plan-persop">$37 per SOP · 1 credit</div>
+        <ul class="plan-list">
+          <li>1 SOP call credit</li>
+          <li>Dashboard + call-in number</li>
+          <li>Shareable employee prep sheet</li>
+        </ul>
+        <form method="POST" action="https://sop-bot-h57s.vercel.app/checkout/sopbot_single">
+          <button type="submit" class="plan-cta">Buy single unit</button>
+        </form>
+      </div>
+      <div class="plan featured reveal">
+        <span class="plan-tag">Most teams choose this</span>
+        <div class="plan-name">5-pack</div>
         <div class="plan-desc">For documenting one team's core processes.</div>
-        <div class="plan-price"><span class="amount">$199</span></div>
-        <div class="plan-persop">≈ $40 per SOP · 5 credits</div>
+        <div class="plan-price"><span class="amount">$125</span></div>
+        <div class="plan-persop">$25 per SOP · 5 credits</div>
         <ul class="plan-list">
           <li>5 SOP call credits</li>
           <li>Dashboard + call-in number</li>
           <li>Shareable employee prep sheet</li>
         </ul>
-        <form method="POST" action="https://sop-bot-h57s.vercel.app/checkout/sopbot_starter">
-          <button type="submit" class="plan-cta">Buy Starter</button>
+        <form method="POST" action="https://sop-bot-h57s.vercel.app/checkout/sopbot_5pack">
+          <button type="submit" class="plan-cta">Buy 5-pack</button>
         </form>
       </div>
-      <div class="plan featured reveal">
-        <span class="plan-tag">Most teams choose this</span>
-        <div class="plan-name">Team</div>
+      <div class="plan reveal">
+        <div class="plan-name">15-pack</div>
         <div class="plan-desc">For documenting a full department's workflows.</div>
-        <div class="plan-price"><span class="amount">$499</span></div>
-        <div class="plan-persop">≈ $33 per SOP · 15 credits</div>
+        <div class="plan-price"><span class="amount">$300</span></div>
+        <div class="plan-persop">$20 per SOP · 15 credits</div>
         <ul class="plan-list">
           <li>15 SOP call credits</li>
           <li>Dashboard + call-in number</li>
           <li>Shareable employee prep sheet</li>
           <li>Priority credit top-ups</li>
         </ul>
-        <form method="POST" action="https://sop-bot-h57s.vercel.app/checkout/sopbot_team">
-          <button type="submit" class="plan-cta">Buy Team</button>
-        </form>
-      </div>
-      <div class="plan reveal">
-        <div class="plan-name">Department</div>
-        <div class="plan-desc">For documenting across multiple functions at once.</div>
-        <div class="plan-price"><span class="amount">$899</span></div>
-        <div class="plan-persop">≈ $30 per SOP · 30 credits</div>
-        <ul class="plan-list">
-          <li>30 SOP call credits</li>
-          <li>Dashboard + call-in number</li>
-          <li>Shareable employee prep sheet</li>
-          <li>Priority credit top-ups</li>
-        </ul>
-        <form method="POST" action="https://sop-bot-h57s.vercel.app/checkout/sopbot_department">
-          <button type="submit" class="plan-cta">Buy Department</button>
+        <form method="POST" action="https://sop-bot-h57s.vercel.app/checkout/sopbot_15pack">
+          <button type="submit" class="plan-cta">Buy 15-pack</button>
         </form>
       </div>
     </div>
-
-    <div class="topup-note">Need one more? À la carte SOP top-ups are <strong style="color: var(--ink);">$49</strong> each, any time.</div>
   </div>
 </section>
 
@@ -211,7 +208,7 @@
       </details>
       <details>
         <summary>What does a new hire need?</summary>
-        <p>Just more call credits. Top up à la carte at $49/SOP, or step up to the next pack.</p>
+        <p>Just more call credits. Buy a single unit at $37, or step up to the next pack.</p>
       </details>
     </div>
   </div>
@@ -224,7 +221,7 @@
     <div class="hero-actions">
       <a href="#pricing" class="btn-primary">Get your call-in number →</a>
     </div>
-    <div class="hero-note">Starting at $199 for 5 SOPs</div>
+    <div class="hero-note">Starting at $37 per SOP</div>
   </div>
 </section>
 
