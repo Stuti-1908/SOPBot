@@ -33,12 +33,12 @@
   {% if account.sop_credits_remaining == 0 %}
   <p class="caption">You're out of credits.</p>
   <form method="POST" action="https://sop-bot-h57s.vercel.app/checkout/sopbot_single?email={{ account.contact_email | urlencode }}">
-    <button type="submit" class="btn btn-primary">Buy 1 more credit — $37</button>
+    <button type="submit" class="btn btn-primary">Buy 1 more credit - $37</button>
   </form>
   {% elif account.sop_credits_remaining <= 2 %}
   <p class="caption">Only {{ account.sop_credits_remaining }} credit(s) left.</p>
   <form method="POST" action="https://sop-bot-h57s.vercel.app/checkout/sopbot_single?email={{ account.contact_email | urlencode }}">
-    <button type="submit" class="btn">Top up — $37/credit</button>
+    <button type="submit" class="btn">Top up - $37/credit</button>
   </form>
   {% endif %}
 </div>
@@ -75,7 +75,7 @@
 <hr class="divider">
 <div class="card">
   <h3>See where you're losing hours every week</h3>
-  <p>You've documented {{ sops|length }} processes. Run a WorkflowIQ report to find automation opportunities across them — scored by time saved, effort, and impact.</p>
+  <p>You've documented {{ sops|length }} processes. Run a WorkflowIQ report to find automation opportunities across them - scored by time saved, effort, and impact.</p>
   <a class="btn btn-primary" href="{{ workflowiq_url }}">Run a WorkflowIQ report →</a>
 </div>
 {% endif %}
