@@ -1,6 +1,6 @@
 [
   {
-    "updatedAt": "2026-09-23T12:13:43.168Z",
+    "updatedAt": "2026-09-23T12:30:01.558Z",
     "createdAt": "2026-07-01T19:22:39.535Z",
     "id": "fFboHgba81r265CZ",
     "name": "SOPBot Main (DRAFT - employee email feature)",
@@ -1340,7 +1340,7 @@
           "nodeCredentialType": "googleDocsOAuth2Api",
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={{ (function() { const extra = $('14a. Prepare Doc Fields (Matched)').item.json.extra_sections || []; if (!extra.length) { return JSON.stringify({ requests: [] }); } const requests = []; extra.forEach(function(section) {   requests.push({ insertText: { endOfSegmentLocation: {}, text: '\\n' + section.heading + '\\n' } });   requests.push({ insertText: { endOfSegmentLocation: {}, text: section.body + '\\n' } }); }); return JSON.stringify({ requests: requests }); })() }}",
+          "jsonBody": "={{ JSON.stringify({ requests: $json.requests }) }}",
           "options": {}
         },
         "id": "append-extra-processes-matched",
@@ -1369,7 +1369,7 @@
           "nodeCredentialType": "googleDocsOAuth2Api",
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={{ (function() { const extra = $('14b. Prepare Doc Fields (Unmatched)').item.json.extra_sections || []; if (!extra.length) { return JSON.stringify({ requests: [] }); } const requests = []; extra.forEach(function(section) {   requests.push({ insertText: { endOfSegmentLocation: {}, text: '\\n' + section.heading + '\\n' } });   requests.push({ insertText: { endOfSegmentLocation: {}, text: section.body + '\\n' } }); }); return JSON.stringify({ requests: requests }); })() }}",
+          "jsonBody": "={{ JSON.stringify({ requests: $json.requests }) }}",
           "options": {}
         },
         "id": "append-extra-processes-unmatched",
@@ -1579,6 +1579,32 @@
             "name": "DadaAI Google Docs OAuth2"
           }
         }
+      },
+      {
+        "parameters": {
+          "jsCode": "const extra = $('14a. Prepare Doc Fields (Matched)').item.json.extra_sections || [];\nconst NL = String.fromCharCode(10);\nconst requests = [];\nextra.forEach(function(section) {\n  requests.push({ insertPageBreak: { endOfSegmentLocation: { segmentId: '' } } });\n  requests.push({ insertText: { endOfSegmentLocation: { segmentId: '' }, text: NL + section.heading + NL } });\n  requests.push({ insertText: { endOfSegmentLocation: { segmentId: '' }, text: section.body + NL } });\n});\nreturn [{ json: { requests: requests } }];"
+        },
+        "id": "build-extra-process-requests-matched",
+        "name": "17a1b. Build Append Requests",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2228,
+          -200
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const extra = $('14b. Prepare Doc Fields (Unmatched)').item.json.extra_sections || [];\nconst NL = String.fromCharCode(10);\nconst requests = [];\nextra.forEach(function(section) {\n  requests.push({ insertPageBreak: { endOfSegmentLocation: { segmentId: '' } } });\n  requests.push({ insertText: { endOfSegmentLocation: { segmentId: '' }, text: NL + section.heading + NL } });\n  requests.push({ insertText: { endOfSegmentLocation: { segmentId: '' }, text: section.body + NL } });\n});\nreturn [{ json: { requests: requests } }];"
+        },
+        "id": "build-extra-process-requests-unmatched",
+        "name": "17b1b. Build Append Requests (Unmatched)",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2228,
+          -8
+        ]
       }
     ],
     "connections": {
@@ -1809,7 +1835,7 @@
         "main": [
           [
             {
-              "node": "17a2. Append Extra Processes",
+              "node": "17a1b. Build Append Requests",
               "type": "main",
               "index": 0
             }
@@ -1842,7 +1868,7 @@
         "main": [
           [
             {
-              "node": "17b2. Append Extra Processes (Unmatched)",
+              "node": "17b1b. Build Append Requests (Unmatched)",
               "type": "main",
               "index": 0
             }
@@ -2205,6 +2231,28 @@
             }
           ]
         ]
+      },
+      "17a1b. Build Append Requests": {
+        "main": [
+          [
+            {
+              "node": "17a2. Append Extra Processes",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "17b1b. Build Append Requests (Unmatched)": {
+        "main": [
+          [
+            {
+              "node": "17b2. Append Extra Processes (Unmatched)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       }
     },
     "settings": {
@@ -2218,9 +2266,9 @@
     },
     "nodeGroups": [],
     "pinData": {},
-    "versionId": "82146b6c-ae40-44ae-98c7-feb876f2c91b",
-    "activeVersionId": "82146b6c-ae40-44ae-98c7-feb876f2c91b",
-    "versionCounter": 115,
+    "versionId": "29d39dcd-109e-4f20-9e75-d745bb36aeac",
+    "activeVersionId": "29d39dcd-109e-4f20-9e75-d745bb36aeac",
+    "versionCounter": 118,
     "triggerCount": 1,
     "sourceWorkflowId": null,
     "shared": [
@@ -2245,9 +2293,9 @@
     ],
     "tags": [],
     "activeVersion": {
-      "updatedAt": "2026-09-23T12:13:43.182Z",
-      "createdAt": "2026-09-23T12:13:43.182Z",
-      "versionId": "82146b6c-ae40-44ae-98c7-feb876f2c91b",
+      "updatedAt": "2026-09-23T12:30:01.571Z",
+      "createdAt": "2026-09-23T12:30:01.571Z",
+      "versionId": "29d39dcd-109e-4f20-9e75-d745bb36aeac",
       "workflowId": "fFboHgba81r265CZ",
       "nodes": [
         {
@@ -3582,7 +3630,7 @@
             "nodeCredentialType": "googleDocsOAuth2Api",
             "sendBody": true,
             "specifyBody": "json",
-            "jsonBody": "={{ (function() { const extra = $('14a. Prepare Doc Fields (Matched)').item.json.extra_sections || []; if (!extra.length) { return JSON.stringify({ requests: [] }); } const requests = []; extra.forEach(function(section) {   requests.push({ insertText: { endOfSegmentLocation: {}, text: '\\n' + section.heading + '\\n' } });   requests.push({ insertText: { endOfSegmentLocation: {}, text: section.body + '\\n' } }); }); return JSON.stringify({ requests: requests }); })() }}",
+            "jsonBody": "={{ JSON.stringify({ requests: $json.requests }) }}",
             "options": {}
           },
           "id": "append-extra-processes-matched",
@@ -3611,7 +3659,7 @@
             "nodeCredentialType": "googleDocsOAuth2Api",
             "sendBody": true,
             "specifyBody": "json",
-            "jsonBody": "={{ (function() { const extra = $('14b. Prepare Doc Fields (Unmatched)').item.json.extra_sections || []; if (!extra.length) { return JSON.stringify({ requests: [] }); } const requests = []; extra.forEach(function(section) {   requests.push({ insertText: { endOfSegmentLocation: {}, text: '\\n' + section.heading + '\\n' } });   requests.push({ insertText: { endOfSegmentLocation: {}, text: section.body + '\\n' } }); }); return JSON.stringify({ requests: requests }); })() }}",
+            "jsonBody": "={{ JSON.stringify({ requests: $json.requests }) }}",
             "options": {}
           },
           "id": "append-extra-processes-unmatched",
@@ -3821,6 +3869,32 @@
               "name": "DadaAI Google Docs OAuth2"
             }
           }
+        },
+        {
+          "parameters": {
+            "jsCode": "const extra = $('14a. Prepare Doc Fields (Matched)').item.json.extra_sections || [];\nconst NL = String.fromCharCode(10);\nconst requests = [];\nextra.forEach(function(section) {\n  requests.push({ insertPageBreak: { endOfSegmentLocation: { segmentId: '' } } });\n  requests.push({ insertText: { endOfSegmentLocation: { segmentId: '' }, text: NL + section.heading + NL } });\n  requests.push({ insertText: { endOfSegmentLocation: { segmentId: '' }, text: section.body + NL } });\n});\nreturn [{ json: { requests: requests } }];"
+          },
+          "id": "build-extra-process-requests-matched",
+          "name": "17a1b. Build Append Requests",
+          "type": "n8n-nodes-base.code",
+          "typeVersion": 2,
+          "position": [
+            2228,
+            -200
+          ]
+        },
+        {
+          "parameters": {
+            "jsCode": "const extra = $('14b. Prepare Doc Fields (Unmatched)').item.json.extra_sections || [];\nconst NL = String.fromCharCode(10);\nconst requests = [];\nextra.forEach(function(section) {\n  requests.push({ insertPageBreak: { endOfSegmentLocation: { segmentId: '' } } });\n  requests.push({ insertText: { endOfSegmentLocation: { segmentId: '' }, text: NL + section.heading + NL } });\n  requests.push({ insertText: { endOfSegmentLocation: { segmentId: '' }, text: section.body + NL } });\n});\nreturn [{ json: { requests: requests } }];"
+          },
+          "id": "build-extra-process-requests-unmatched",
+          "name": "17b1b. Build Append Requests (Unmatched)",
+          "type": "n8n-nodes-base.code",
+          "typeVersion": 2,
+          "position": [
+            2228,
+            -8
+          ]
         }
       ],
       "connections": {
@@ -4051,7 +4125,7 @@
           "main": [
             [
               {
-                "node": "17a2. Append Extra Processes",
+                "node": "17a1b. Build Append Requests",
                 "type": "main",
                 "index": 0
               }
@@ -4084,7 +4158,7 @@
           "main": [
             [
               {
-                "node": "17b2. Append Extra Processes (Unmatched)",
+                "node": "17b1b. Build Append Requests (Unmatched)",
                 "type": "main",
                 "index": 0
               }
@@ -4447,6 +4521,28 @@
               }
             ]
           ]
+        },
+        "17a1b. Build Append Requests": {
+          "main": [
+            [
+              {
+                "node": "17a2. Append Extra Processes",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "17b1b. Build Append Requests (Unmatched)": {
+          "main": [
+            [
+              {
+                "node": "17b2. Append Extra Processes (Unmatched)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
         }
       },
       "nodeGroups": [],
@@ -4456,18 +4552,18 @@
       "autosaved": false,
       "workflowPublishHistory": [
         {
-          "createdAt": "2026-09-23T12:13:43.637Z",
-          "id": 196,
+          "createdAt": "2026-09-23T12:30:02.210Z",
+          "id": 202,
           "workflowId": "fFboHgba81r265CZ",
-          "versionId": "82146b6c-ae40-44ae-98c7-feb876f2c91b",
+          "versionId": "29d39dcd-109e-4f20-9e75-d745bb36aeac",
           "event": "deactivated",
           "userId": "659411d0-00f4-4312-ba4e-31648993ba9d"
         },
         {
-          "createdAt": "2026-09-23T12:13:43.739Z",
-          "id": 197,
+          "createdAt": "2026-09-23T12:30:02.274Z",
+          "id": 203,
           "workflowId": "fFboHgba81r265CZ",
-          "versionId": "82146b6c-ae40-44ae-98c7-feb876f2c91b",
+          "versionId": "29d39dcd-109e-4f20-9e75-d745bb36aeac",
           "event": "activated",
           "userId": "659411d0-00f4-4312-ba4e-31648993ba9d"
         }
