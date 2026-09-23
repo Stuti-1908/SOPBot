@@ -1,6 +1,6 @@
 [
   {
-    "updatedAt": "2026-09-22T11:54:55.439Z",
+    "updatedAt": "2026-09-23T09:18:44.177Z",
     "createdAt": "2026-07-01T19:22:39.535Z",
     "id": "fFboHgba81r265CZ",
     "name": "SOPBot Main (DRAFT - employee email feature)",
@@ -26,7 +26,7 @@
         "webhookId": "sopbot-call-ended",
         "credentials": {
           "httpHeaderAuth": {
-            "id": "ZJhmua8tY5wvs2T2",
+            "id": "vCQ7f4vdp4qj4Hif",
             "name": "DadaAI Vapi Webhook Secret"
           }
         }
@@ -181,7 +181,7 @@
           },
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={{ JSON.stringify({\n  model: \"claude-sonnet-4-6\",\n  max_tokens: 4096,\n  system: \"You are SOPBot, an expert business process analyst. Extract a structured SOP from this call transcript. Respond with valid JSON only, no markdown fences, matching this schema: {\\\"process_name\\\":\\\"string\\\",\\\"department\\\":\\\"string|null\\\",\\\"process_owner\\\":\\\"string|null\\\",\\\"company_name\\\":\\\"string\\\",\\\"employee_name\\\":\\\"string|null\\\",\\\"employee_role\\\":\\\"string|null\\\",\\\"employee_tenure\\\":\\\"string|null\\\",\\\"employee_email\\\":\\\"string|null - the email address they gave to receive a copy of this SOP\\\",\\\"role_summary\\\":\\\"string|null - one or two sentences on what the role is responsible for\\\",\\\"process_trigger\\\":\\\"string|null - what kicks the process off\\\",\\\"frequency\\\":\\\"string|null\\\",\\\"steps\\\":[{\\\"step_number\\\":1,\\\"title\\\":\\\"string\\\",\\\"description\\\":\\\"string\\\",\\\"tools_used\\\":[\\\"strings\\\"],\\\"decision_points\\\":[\\\"plain strings only, e.g. If X then Y\\\"],\\\"common_errors\\\":[\\\"plain strings only\\\"],\\\"pain_points\\\":[\\\"plain strings only\\\"],\\\"completion_indicator\\\":\\\"string|null - how you know this step is done\\\"}],\\\"inputs\\\":[],\\\"outputs\\\":[],\\\"systems_used\\\":[],\\\"tools_and_resources\\\":[\\\"deduplicated list of all tools\\\"],\\\"exceptions\\\":[],\\\"exception_handling\\\":[\\\"plain strings only, formatted as: If X, then Y\\\"],\\\"completion_criteria\\\":\\\"string|null - final output or result that tells you the whole process is complete\\\",\\\"insider_notes\\\":\\\"string|null - things a new hire would get wrong\\\",\\\"notes\\\":\\\"string|null\\\"}. All array items must be plain strings, never nested objects. Extract ONLY what the employee said; use null or empty arrays for anything not captured.\",\n  messages: [{ role: \"user\", content: \"TRANSCRIPT:\\n\" + $('3. Parse Vapi Payload').item.json.transcript }]\n}) }}",
+          "jsonBody": "={{ JSON.stringify({\n  model: \"claude-sonnet-4-6\",\n  max_tokens: 4096,\n  system: \"You are SOPBot, an expert business process analyst. An employee may describe ONE OR MORE distinct processes in a single call. Extract a structured record from this call transcript. Respond with valid JSON only, no markdown fences, matching this schema: {\\\"company_name\\\":\\\"string\\\",\\\"employee_name\\\":\\\"string|null\\\",\\\"employee_role\\\":\\\"string|null\\\",\\\"employee_tenure\\\":\\\"string|null\\\",\\\"employee_email\\\":\\\"string|null - the email address they gave to receive a copy of this SOP\\\",\\\"processes\\\":[{\\\"process_name\\\":\\\"string\\\",\\\"department\\\":\\\"string|null\\\",\\\"process_owner\\\":\\\"string|null\\\",\\\"role_summary\\\":\\\"string|null - one or two sentences on what this process is responsible for\\\",\\\"process_trigger\\\":\\\"string|null - what kicks the process off\\\",\\\"frequency\\\":\\\"string|null\\\",\\\"steps\\\":[{\\\"step_number\\\":1,\\\"title\\\":\\\"string\\\",\\\"description\\\":\\\"string\\\",\\\"tools_used\\\":[\\\"strings\\\"],\\\"decision_points\\\":[\\\"plain strings only, e.g. If X then Y\\\"],\\\"common_errors\\\":[\\\"plain strings only\\\"],\\\"pain_points\\\":[\\\"plain strings only\\\"],\\\"completion_indicator\\\":\\\"string|null - how you know this step is done\\\"}],\\\"tools_and_resources\\\":[\\\"deduplicated list of all tools for this process\\\"],\\\"exception_handling\\\":[\\\"plain strings only, formatted as: If X, then Y\\\"],\\\"completion_criteria\\\":\\\"string|null - final output or result that tells you this process is complete\\\",\\\"insider_notes\\\":\\\"string|null - things a new hire would get wrong\\\",\\\"notes\\\":\\\"string|null\\\"}]}. Treat each clearly distinct process the employee describes as a separate entry in the \\\\\\\"processes\\\\\\\" array, in the order they were discussed. If only one process was described, return an array with exactly one entry. All array items must be plain strings, never nested objects. Extract ONLY what the employee said; use null or empty arrays for anything not captured.\",\n  messages: [{ role: \"user\", content: \"TRANSCRIPT:\\n\" + $('3. Parse Vapi Payload').item.json.transcript }]\n}) }}",
           "options": {
             "timeout": 60000
           }
@@ -314,7 +314,7 @@
             "value": {
               "id": "={{ $('6. Create Processing Row').item.json.id }}",
               "Employee Name": "={{ $('8. Parse Claude JSON').item.json.employee_name }}",
-              "Process Name": "={{ $('8. Parse Claude JSON').item.json.process_name }}",
+              "Process Name": "={{ $('8b. Validate Extraction Quality').item.json.process_name }}",
               "Company Raw": "={{ $('8. Parse Claude JSON').item.json.company_name }}",
               "Status": "Matched"
             },
@@ -358,7 +358,7 @@
             "value": {
               "id": "={{ $('6. Create Processing Row').item.json.id }}",
               "Employee Name": "={{ $('8. Parse Claude JSON').item.json.employee_name }}",
-              "Process Name": "={{ $('8. Parse Claude JSON').item.json.process_name }}",
+              "Process Name": "={{ $('8b. Validate Extraction Quality').item.json.process_name }}",
               "Company Raw": "={{ $('8. Parse Claude JSON').item.json.company_name }}",
               "Status": "Unmatched"
             },
@@ -405,7 +405,7 @@
           },
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={{ JSON.stringify({\n  type: \"Email\",\n  contactId: $('9b. Normalize Company Match').item.json.ghl_contact_id,\n  subject: \"New SOP Ready: \" + $('8. Parse Claude JSON').item.json.process_name + \" â€” \" + $('8. Parse Claude JSON').item.json.employee_name,\n  html: \"<p>A new SOP has been generated.</p><p>Process: \" + $('8. Parse Claude JSON').item.json.process_name + \"</p><p>Company: \" + $('8. Parse Claude JSON').item.json.company_name + \"</p><p><a href='https://docs.google.com/document/d/\" + $('16a. Copy Template Doc').item.json.id + \"/edit'>View SOP Document</a></p>\"\n}) }}",
+          "jsonBody": "={{ JSON.stringify({ type: \"Email\", contactId: $('9b. Normalize Company Match').item.json.ghl_contact_id, subject: $json.subject, html: $json.html }) }}",
           "options": {}
         },
         "id": "owner-email-ghl",
@@ -447,7 +447,7 @@
           },
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={{ JSON.stringify({\n  type: \"Email\",\n  contactId: \"FGRKMuONxezAC6d940BJ\",\n  subject: \"ACTION REQUIRED â€” SOPBot: Unmatched Company on Call\",\n  html: \"<p>Unmatched company on a SOPBot call.</p><p>Raw name: \" + $('8. Parse Claude JSON').item.json.company_name + \"</p><p>Employee: \" + $('8. Parse Claude JSON').item.json.employee_name + \"</p><p>Process: \" + $('8. Parse Claude JSON').item.json.process_name + \"</p><p>Call ID: \" + $('3. Parse Vapi Payload').item.json.call_id + \"</p><p><a href='https://docs.google.com/document/d/\" + $('16b. Copy Template Doc (Unmatched)').item.json.id + \"/edit'>View SOP Document (Unmatched folder)</a></p>\"\n}) }}",
+          "jsonBody": "={{ JSON.stringify({ type: \"Email\", contactId: \"FGRKMuONxezAC6d940BJ\", subject: $json.subject, html: $json.html }) }}",
           "options": {}
         },
         "id": "ops-alert-ghl",
@@ -470,7 +470,7 @@
       },
       {
         "parameters": {
-          "jsCode": "const data = $input.first().json;\nconst company = (data.company_name || '').trim();\n// Strip common legal suffixes so 'Acme Inc' and 'Acme' match the same\n// client record - see docs/adr or session notes on the company-name\n// matching fix. Used by both the Airtable Company Router formula and\n// the Supabase client lookup (18c), so both branches match consistently.\nconst companyNormalized = company.toLowerCase().replace(/\\s*[,.]?\\s*(inc|llc|ltd|corp|co|company)\\.?\\s*$/, '').trim();\nconst steps = Array.isArray(data.steps) ? data.steps : [];\nconst isLowQuality = !company || company.toLowerCase() === 'unknown' || steps.length === 0;\nreturn [{ json: { ...data, company_name: company, company_name_normalized: companyNormalized, _low_quality: isLowQuality, _quality_reason: isLowQuality ? ('Claude extraction produced insufficient data: company=' + JSON.stringify(company) + ', steps=' + steps.length) : null } }];"
+          "jsCode": "\nconst data = $input.first().json;\nconst company = (data.company_name || '').trim();\n// Strip common legal suffixes so 'Acme Inc' and 'Acme' match the same\n// client record - see docs/adr or session notes on the company-name\n// matching fix. Used by both the Airtable Company Router formula and\n// the Supabase client lookup (18c), so both branches match consistently.\nconst companyNormalized = company.toLowerCase().replace(/\\s*[,.]?\\s*(inc|llc|ltd|corp|co|company)\\.?\\s*$/, '').trim();\nconst processes = Array.isArray(data.processes) ? data.processes : [];\nconst hasAnySteps = processes.some(function(p) { return Array.isArray(p.steps) && p.steps.length > 0; });\nconst isLowQuality = !company || company.toLowerCase() === 'unknown' || processes.length === 0 || !hasAnySteps;\n\n// One employee can now describe multiple processes in a single call. Every\n// node downstream that used to read a single top-level process_name (Airtable\n// status rows, Supabase call log, GHL notification emails) still needs ONE\n// string to log/display, so compute a joined summary here rather than patching\n// each consumer to branch on array length individually.\nconst processNames = processes.map(function(p) { return p.process_name; }).filter(Boolean);\nconst processSummary = processNames.length ? processNames.join(', ') : 'Unknown process';\n\nreturn [{ json: { ...data, company_name: company, company_name_normalized: companyNormalized, process_name: processSummary, process_summary: processSummary, process_count: processes.length, _low_quality: isLowQuality, _quality_reason: isLowQuality ? ('Claude extraction produced insufficient data: company=' + JSON.stringify(company) + ', processes=' + processes.length) : null } }];\n"
         },
         "id": "validate-extraction-quality",
         "name": "8b. Validate Extraction Quality",
@@ -559,7 +559,7 @@
       },
       {
         "parameters": {
-          "jsCode": "const NL = String.fromCharCode(10);\nconst data = $('8. Parse Claude JSON').item.json;\n\nfunction esc(s) { return (s === null || s === undefined) ? '' : String(s); }\n\nconst stepsBlock = (data.steps || []).map(function(s) {\n  const tools = (s.tools_used || []).join(', ') || 'None specified';\n  const notes = [].concat(s.decision_points || [], s.pain_points || [], s.common_errors || []).map(function(x){ return typeof x === 'string' ? x : JSON.stringify(x); }).join('; ') || 'None';\n  const done = s.completion_indicator || 'Not specified';\n  const parts = [\n    'Step ' + s.step_number + ': ' + esc(s.action || s.title),\n    'Tools: ' + tools,\n    'Notes: ' + notes,\n    'Done when: ' + done\n  ];\n  return parts.join(NL);\n}).join(NL + NL);\n\nconst toolsSet = new Set();\n(data.steps || []).forEach(function(s) { (s.tools_used || []).forEach(function(t) { toolsSet.add(t); }); });\n(data.tools_and_resources || []).forEach(function(t) { toolsSet.add(t); });\nconst toolsList = Array.from(toolsSet).join(', ') || 'None specified';\n\nconst exceptionHandling = (data.exception_handling || []).length\n  ? data.exception_handling.map(function(e) {\n      return typeof e === 'string' ? e : ('If ' + (e.if || e.condition) + ': ' + (e.then || e.action));\n    }).join(NL)\n  : 'None captured during this call.';\n\nconst today = new Date().toISOString().slice(0, 10);\n\nreturn [{\n  json: {\n    doc_name: esc(data.employee_name) + ' - ' + esc(data.process_name),\n    tokens: {\n      '{{COMPANY_NAME}}': esc(data.company_name),\n      '{{PROCESS_NAME}}': esc(data.process_name),\n      '{{EMPLOYEE_ROLE}}': esc(data.employee_role),\n      '{{EMPLOYEE_NAME}}': esc(data.employee_name),\n      '{{EMPLOYEE_TENURE}}': esc(data.employee_tenure),\n      '{{DATE}}': today,\n      '{{PROCESS_FREQUENCY}}': esc(data.frequency || data.process_frequency),\n      '{{ROLE_SUMMARY}}': esc(data.role_summary),\n      '{{PROCESS_TRIGGER}}': esc(data.process_trigger),\n      '{{TOOLS_LIST}}': toolsList,\n      '{{STEPS_BLOCK}}': stepsBlock || 'No steps captured.',\n      '{{EXCEPTION_HANDLING}}': exceptionHandling,\n      '{{COMPLETION_CRITERIA}}': esc(data.completion_criteria),\n      '{{INSIDER_NOTES}}': esc(data.insider_notes || data.notes)\n    }\n  }\n}];\n"
+          "jsCode": "\nconst NL = String.fromCharCode(10);\nconst data = $('8. Parse Claude JSON').item.json;\n\nfunction esc(s) { return (s === null || s === undefined) ? '' : String(s); }\n\nfunction renderSteps(steps) {\n  return (steps || []).map(function(s) {\n    const tools = (s.tools_used || []).join(', ') || 'None specified';\n    const notes = [].concat(s.decision_points || [], s.pain_points || [], s.common_errors || []).map(function(x){ return typeof x === 'string' ? x : JSON.stringify(x); }).join('; ') || 'None';\n    const done = s.completion_indicator || 'Not specified';\n    const parts = [\n      'Step ' + s.step_number + ': ' + esc(s.action || s.title),\n      'Tools: ' + tools,\n      'Notes: ' + notes,\n      'Done when: ' + done\n    ];\n    return parts.join(NL);\n  }).join(NL + NL);\n}\n\nfunction renderToolsList(process) {\n  const toolsSet = new Set();\n  (process.steps || []).forEach(function(s) { (s.tools_used || []).forEach(function(t) { toolsSet.add(t); }); });\n  (process.tools_and_resources || []).forEach(function(t) { toolsSet.add(t); });\n  return Array.from(toolsSet).join(', ') || 'None specified';\n}\n\nfunction renderExceptionHandling(process) {\n  return (process.exception_handling || []).length\n    ? process.exception_handling.map(function(e) {\n        return typeof e === 'string' ? e : ('If ' + (e.if || e.condition) + ': ' + (e.then || e.action));\n      }).join(NL)\n    : 'None captured during this call.';\n}\n\nconst processes = Array.isArray(data.processes) && data.processes.length ? data.processes : [{}];\nconst first = processes[0];\nconst extra = processes.slice(1);\n\nconst today = new Date().toISOString().slice(0, 10);\n\n// Plain-text block for each additional process, appended to the doc after\n// the template's own (first-process) section. Kept as plain text + simple\n// line breaks since it's inserted via Google Docs insertText, not through\n// the template's own formatting.\nconst extraSections = extra.map(function(p) {\n  const lines = [];\n  lines.push('');\n  lines.push('----------------------------------------');\n  lines.push('PROCESS: ' + esc(p.process_name));\n  lines.push('----------------------------------------');\n  if (p.department) lines.push('Department: ' + esc(p.department));\n  if (p.process_owner) lines.push('Process owner: ' + esc(p.process_owner));\n  if (p.role_summary) lines.push('Summary: ' + esc(p.role_summary));\n  if (p.process_trigger) lines.push('Trigger: ' + esc(p.process_trigger));\n  if (p.frequency) lines.push('Frequency: ' + esc(p.frequency));\n  lines.push('');\n  lines.push('Tools: ' + renderToolsList(p));\n  lines.push('');\n  lines.push('Steps:');\n  lines.push(renderSteps(p.steps) || 'No steps captured.');\n  lines.push('');\n  lines.push('Exception handling:');\n  lines.push(renderExceptionHandling(p));\n  if (p.completion_criteria) {\n    lines.push('');\n    lines.push('Completion criteria: ' + esc(p.completion_criteria));\n  }\n  if (p.insider_notes || p.notes) {\n    lines.push('');\n    lines.push('Notes: ' + esc(p.insider_notes || p.notes));\n  }\n  return lines.join(NL);\n}).join(NL);\n\nreturn [{\n  json: {\n    doc_name: esc(data.employee_name) || 'Unnamed employee',\n    process_count: processes.length,\n    extra_sections_text: extraSections,\n    tokens: {\n      '{{COMPANY_NAME}}': esc(data.company_name),\n      '{{PROCESS_NAME}}': esc(first.process_name),\n      '{{EMPLOYEE_ROLE}}': esc(data.employee_role),\n      '{{EMPLOYEE_NAME}}': esc(data.employee_name),\n      '{{EMPLOYEE_TENURE}}': esc(data.employee_tenure),\n      '{{DATE}}': today,\n      '{{PROCESS_FREQUENCY}}': esc(first.frequency),\n      '{{ROLE_SUMMARY}}': esc(first.role_summary),\n      '{{PROCESS_TRIGGER}}': esc(first.process_trigger),\n      '{{TOOLS_LIST}}': renderToolsList(first),\n      '{{STEPS_BLOCK}}': renderSteps(first.steps) || 'No steps captured.',\n      '{{EXCEPTION_HANDLING}}': renderExceptionHandling(first),\n      '{{COMPLETION_CRITERIA}}': esc(first.completion_criteria),\n      '{{INSIDER_NOTES}}': esc(first.insider_notes || first.notes)\n    }\n  }\n}];\n"
         },
         "id": "prepare-doc-fields-matched",
         "name": "14a. Prepare Doc Fields (Matched)",
@@ -572,7 +572,7 @@
       },
       {
         "parameters": {
-          "jsCode": "const NL = String.fromCharCode(10);\nconst data = $('8. Parse Claude JSON').item.json;\n\nfunction esc(s) { return (s === null || s === undefined) ? '' : String(s); }\n\nconst stepsBlock = (data.steps || []).map(function(s) {\n  const tools = (s.tools_used || []).join(', ') || 'None specified';\n  const notes = [].concat(s.decision_points || [], s.pain_points || [], s.common_errors || []).map(function(x){ return typeof x === 'string' ? x : JSON.stringify(x); }).join('; ') || 'None';\n  const done = s.completion_indicator || 'Not specified';\n  const parts = [\n    'Step ' + s.step_number + ': ' + esc(s.action || s.title),\n    'Tools: ' + tools,\n    'Notes: ' + notes,\n    'Done when: ' + done\n  ];\n  return parts.join(NL);\n}).join(NL + NL);\n\nconst toolsSet = new Set();\n(data.steps || []).forEach(function(s) { (s.tools_used || []).forEach(function(t) { toolsSet.add(t); }); });\n(data.tools_and_resources || []).forEach(function(t) { toolsSet.add(t); });\nconst toolsList = Array.from(toolsSet).join(', ') || 'None specified';\n\nconst exceptionHandling = (data.exception_handling || []).length\n  ? data.exception_handling.map(function(e) {\n      return typeof e === 'string' ? e : ('If ' + (e.if || e.condition) + ': ' + (e.then || e.action));\n    }).join(NL)\n  : 'None captured during this call.';\n\nconst today = new Date().toISOString().slice(0, 10);\n\nreturn [{\n  json: {\n    doc_name: esc(data.employee_name) + ' - ' + esc(data.process_name),\n    tokens: {\n      '{{COMPANY_NAME}}': esc(data.company_name),\n      '{{PROCESS_NAME}}': esc(data.process_name),\n      '{{EMPLOYEE_ROLE}}': esc(data.employee_role),\n      '{{EMPLOYEE_NAME}}': esc(data.employee_name),\n      '{{EMPLOYEE_TENURE}}': esc(data.employee_tenure),\n      '{{DATE}}': today,\n      '{{PROCESS_FREQUENCY}}': esc(data.frequency || data.process_frequency),\n      '{{ROLE_SUMMARY}}': esc(data.role_summary),\n      '{{PROCESS_TRIGGER}}': esc(data.process_trigger),\n      '{{TOOLS_LIST}}': toolsList,\n      '{{STEPS_BLOCK}}': stepsBlock || 'No steps captured.',\n      '{{EXCEPTION_HANDLING}}': exceptionHandling,\n      '{{COMPLETION_CRITERIA}}': esc(data.completion_criteria),\n      '{{INSIDER_NOTES}}': esc(data.insider_notes || data.notes)\n    }\n  }\n}];\n"
+          "jsCode": "\nconst NL = String.fromCharCode(10);\nconst data = $('8. Parse Claude JSON').item.json;\n\nfunction esc(s) { return (s === null || s === undefined) ? '' : String(s); }\n\nfunction renderSteps(steps) {\n  return (steps || []).map(function(s) {\n    const tools = (s.tools_used || []).join(', ') || 'None specified';\n    const notes = [].concat(s.decision_points || [], s.pain_points || [], s.common_errors || []).map(function(x){ return typeof x === 'string' ? x : JSON.stringify(x); }).join('; ') || 'None';\n    const done = s.completion_indicator || 'Not specified';\n    const parts = [\n      'Step ' + s.step_number + ': ' + esc(s.action || s.title),\n      'Tools: ' + tools,\n      'Notes: ' + notes,\n      'Done when: ' + done\n    ];\n    return parts.join(NL);\n  }).join(NL + NL);\n}\n\nfunction renderToolsList(process) {\n  const toolsSet = new Set();\n  (process.steps || []).forEach(function(s) { (s.tools_used || []).forEach(function(t) { toolsSet.add(t); }); });\n  (process.tools_and_resources || []).forEach(function(t) { toolsSet.add(t); });\n  return Array.from(toolsSet).join(', ') || 'None specified';\n}\n\nfunction renderExceptionHandling(process) {\n  return (process.exception_handling || []).length\n    ? process.exception_handling.map(function(e) {\n        return typeof e === 'string' ? e : ('If ' + (e.if || e.condition) + ': ' + (e.then || e.action));\n      }).join(NL)\n    : 'None captured during this call.';\n}\n\nconst processes = Array.isArray(data.processes) && data.processes.length ? data.processes : [{}];\nconst first = processes[0];\nconst extra = processes.slice(1);\n\nconst today = new Date().toISOString().slice(0, 10);\n\n// Plain-text block for each additional process, appended to the doc after\n// the template's own (first-process) section. Kept as plain text + simple\n// line breaks since it's inserted via Google Docs insertText, not through\n// the template's own formatting.\nconst extraSections = extra.map(function(p) {\n  const lines = [];\n  lines.push('');\n  lines.push('----------------------------------------');\n  lines.push('PROCESS: ' + esc(p.process_name));\n  lines.push('----------------------------------------');\n  if (p.department) lines.push('Department: ' + esc(p.department));\n  if (p.process_owner) lines.push('Process owner: ' + esc(p.process_owner));\n  if (p.role_summary) lines.push('Summary: ' + esc(p.role_summary));\n  if (p.process_trigger) lines.push('Trigger: ' + esc(p.process_trigger));\n  if (p.frequency) lines.push('Frequency: ' + esc(p.frequency));\n  lines.push('');\n  lines.push('Tools: ' + renderToolsList(p));\n  lines.push('');\n  lines.push('Steps:');\n  lines.push(renderSteps(p.steps) || 'No steps captured.');\n  lines.push('');\n  lines.push('Exception handling:');\n  lines.push(renderExceptionHandling(p));\n  if (p.completion_criteria) {\n    lines.push('');\n    lines.push('Completion criteria: ' + esc(p.completion_criteria));\n  }\n  if (p.insider_notes || p.notes) {\n    lines.push('');\n    lines.push('Notes: ' + esc(p.insider_notes || p.notes));\n  }\n  return lines.join(NL);\n}).join(NL);\n\nreturn [{\n  json: {\n    doc_name: esc(data.employee_name) || 'Unnamed employee',\n    process_count: processes.length,\n    extra_sections_text: extraSections,\n    tokens: {\n      '{{COMPANY_NAME}}': esc(data.company_name),\n      '{{PROCESS_NAME}}': esc(first.process_name),\n      '{{EMPLOYEE_ROLE}}': esc(data.employee_role),\n      '{{EMPLOYEE_NAME}}': esc(data.employee_name),\n      '{{EMPLOYEE_TENURE}}': esc(data.employee_tenure),\n      '{{DATE}}': today,\n      '{{PROCESS_FREQUENCY}}': esc(first.frequency),\n      '{{ROLE_SUMMARY}}': esc(first.role_summary),\n      '{{PROCESS_TRIGGER}}': esc(first.process_trigger),\n      '{{TOOLS_LIST}}': renderToolsList(first),\n      '{{STEPS_BLOCK}}': renderSteps(first.steps) || 'No steps captured.',\n      '{{EXCEPTION_HANDLING}}': renderExceptionHandling(first),\n      '{{COMPLETION_CRITERIA}}': esc(first.completion_criteria),\n      '{{INSIDER_NOTES}}': esc(first.insider_notes || first.notes)\n    }\n  }\n}];\n"
         },
         "id": "prepare-doc-fields-unmatched",
         "name": "14b. Prepare Doc Fields (Unmatched)",
@@ -874,7 +874,7 @@
           },
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={{ JSON.stringify({\n  type: \"Email\",\n  contactId: $json.contact.id,\n  subject: \"Your SOP is ready: \" + $('8. Parse Claude JSON').item.json.process_name,\n  html: \"<p>Hi \" + $('8. Parse Claude JSON').item.json.employee_name + \",</p><p>Thanks for walking through your process on the call. Here's the SOP that was generated from it:</p><p><a href='https://docs.google.com/document/d/\" + $('16a. Copy Template Doc').item.json.id + \"/edit'>View your SOP</a></p><p>You can also see it in your team's SOPBot dashboard.</p>\"\n}) }}",
+          "jsonBody": "={{ JSON.stringify({ type: \"Email\", contactId: $('12c. Upsert Employee Contact (GHL)').item.json.contact.id, subject: $json.subject, html: $json.html }) }}",
           "options": {}
         },
         "id": "sopbot-employee-email-send",
@@ -1007,7 +1007,7 @@
           },
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={{ JSON.stringify({ type: \"Email\", contactId: $json.contact.id, subject: \"SOPBot call completed: \" + $('8. Parse Claude JSON').item.json.process_name, html: \"<p>A SOPBot call just completed.</p><p>Company: \" + $('8. Parse Claude JSON').item.json.company_name + \"</p><p>Employee: \" + $('8. Parse Claude JSON').item.json.employee_name + \"</p><p>Process: \" + $('8. Parse Claude JSON').item.json.process_name + \"</p><p><a href='https://docs.google.com/document/d/\" + $('16a. Copy Template Doc').item.json.id + \"/edit'>View SOP Document</a></p>\" }) }}\n",
+          "jsonBody": "={{ JSON.stringify({ type: \"Email\", contactId: $('12f. Upsert Dwayne Contact (GHL)').item.json.contact.id, subject: $json.subject, html: $json.html }) }}",
           "options": {}
         },
         "id": "dd094ac3-5a94-4369-83ae-bc2da42e7f36",
@@ -1082,7 +1082,7 @@
               },
               {
                 "fieldId": "process_name",
-                "fieldValue": "={{ $('8. Parse Claude JSON').item.json.process_name }}"
+                "fieldValue": "={{ $('8b. Validate Extraction Quality').item.json.process_name }}"
               },
               {
                 "fieldId": "employee_name",
@@ -1269,7 +1269,7 @@
       },
       {
         "parameters": {
-          "jsCode": "// Merges both branches (an existing folder found in 15b, or one just\n// created in 15d) into one consistent field for 16a/16b to consume.\nconst item = $input.first().json;\nconst folderId = item.company_folder_id || item.id;\nreturn [{ json: { company_folder_id: folderId } }];"
+          "jsCode": "// Merges both branches (an existing folder found in 15b, or one just\n// created in 15d) into one consistent field for 16a/16b to consume.\n// Also re-attaches the match result from 9b, which this node would\n// otherwise drop - 10. Is Matched? reads $json.matched from THIS node's\n// output, so losing it here silently sent every matched client down the\n// unmatched/ops-alert branch (found via a real test call on 2026-09-23).\nconst item = $input.first().json;\nconst folderId = item.company_folder_id || item.id;\nconst normalizeResult = $('9b. Normalize Company Match').item.json;\nreturn [{ json: { ...normalizeResult, company_folder_id: folderId } }];"
         },
         "id": "resolve-company-folder-id",
         "name": "15e. Resolve Company Folder ID",
@@ -1279,6 +1279,116 @@
           2000,
           -360
         ]
+      },
+      {
+        "parameters": {
+          "jsCode": "\nfunction wrap(title, bodyHtml) {\n  return `<html><head><meta charset=\"utf-8\"></head><body style=\"margin:0; padding:0; background-color:#FAF6EF;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FAF6EF;\">\n<tr><td align=\"center\" style=\"padding: 40px 16px;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:560px; background-color:#ffffff; border-radius:8px; overflow:hidden; border:1px solid #E3D9C6;\">\n<tr><td style=\"background-color:#241F1A; padding:28px 32px;\">\n<span style=\"font-family: Georgia, &quot;Times New Roman&quot;, serif; font-size:22px; color:#FAF6EF; font-weight:bold;\">SOPBot<span style=\"color:#E2934F;\">.</span></span>\n</td></tr>\n<tr><td style=\"padding:36px 32px 8px;\">\n<h1 style=\"margin:0; font-family: Georgia, &quot;Times New Roman&quot;, serif; font-size:22px; font-weight:600; color:#241F1A;\">${title}</h1>\n</td></tr>\n<tr><td style=\"padding:16px 32px 32px; font-family: Arial, Helvetica, sans-serif; font-size:15px; line-height:1.6; color:#5C5348;\">\n${bodyHtml}\n</td></tr>\n<tr><td style=\"padding:8px 32px 32px; font-family: Arial, Helvetica, sans-serif; font-size:12px; color:#9B9184; border-top:1px solid #E3D9C6;\">\n<p style=\"margin:20px 0 0;\">SOPBot by DadaAI</p>\n</td></tr>\n</table>\n</td></tr>\n</table>\n</body></html>`;\n}\n\nfunction field(label, value) {\n  return `<p style=\"margin:0 0 4px; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; color:#C1602A; font-weight:bold;\">${label}</p><p style=\"margin:0 0 16px; font-size:15px; color:#241F1A; font-weight:600;\">${value}</p>`;\n}\n\nfunction button(url, label) {\n  return `<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\"><tr><td style=\"background-color:#C1602A; border-radius:4px;\"><a href=\"${url}\" style=\"display:inline-block; padding:12px 28px; font-family: Arial, Helvetica, sans-serif; font-size:14px; font-weight:600; color:#FAF6EF; text-decoration:none;\">${label}</a></td></tr></table>`;\n}\n\nfunction esc(v) {\n  return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\n}\n\n\nconst process_name = esc($('8b. Validate Extraction Quality').item.json.process_name);\nconst employee_name = esc($('8. Parse Claude JSON').item.json.employee_name);\nconst company_name = esc($('8. Parse Claude JSON').item.json.company_name);\nconst docUrl = 'https://docs.google.com/document/d/' + $('16a. Copy Template Doc').item.json.id + '/edit';\n\nconst body = `<p style=\"margin:0 0 20px;\">A new SOP has been generated from a SOPBot call.</p>` +\n  field('Process', process_name) +\n  field('Employee', employee_name) +\n  field('Company', company_name) +\n  `<div style=\"margin-top:8px;\">` + button(docUrl, 'View SOP Document') + `</div>`;\n\nreturn [{ json: {\n  subject: 'New SOP Ready: ' + $('8b. Validate Extraction Quality').item.json.process_name + ' — ' + $('8. Parse Claude JSON').item.json.employee_name,\n  html: wrap('New SOP ready', body)\n} }];\n"
+        },
+        "id": "build-owner-email-html",
+        "name": "12a-html. Build Owner Email HTML",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2536,
+          -360
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "\nfunction wrap(title, bodyHtml) {\n  return `<html><head><meta charset=\"utf-8\"></head><body style=\"margin:0; padding:0; background-color:#FAF6EF;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FAF6EF;\">\n<tr><td align=\"center\" style=\"padding: 40px 16px;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:560px; background-color:#ffffff; border-radius:8px; overflow:hidden; border:1px solid #E3D9C6;\">\n<tr><td style=\"background-color:#241F1A; padding:28px 32px;\">\n<span style=\"font-family: Georgia, &quot;Times New Roman&quot;, serif; font-size:22px; color:#FAF6EF; font-weight:bold;\">SOPBot<span style=\"color:#E2934F;\">.</span></span>\n</td></tr>\n<tr><td style=\"padding:36px 32px 8px;\">\n<h1 style=\"margin:0; font-family: Georgia, &quot;Times New Roman&quot;, serif; font-size:22px; font-weight:600; color:#241F1A;\">${title}</h1>\n</td></tr>\n<tr><td style=\"padding:16px 32px 32px; font-family: Arial, Helvetica, sans-serif; font-size:15px; line-height:1.6; color:#5C5348;\">\n${bodyHtml}\n</td></tr>\n<tr><td style=\"padding:8px 32px 32px; font-family: Arial, Helvetica, sans-serif; font-size:12px; color:#9B9184; border-top:1px solid #E3D9C6;\">\n<p style=\"margin:20px 0 0;\">SOPBot by DadaAI</p>\n</td></tr>\n</table>\n</td></tr>\n</table>\n</body></html>`;\n}\n\nfunction field(label, value) {\n  return `<p style=\"margin:0 0 4px; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; color:#C1602A; font-weight:bold;\">${label}</p><p style=\"margin:0 0 16px; font-size:15px; color:#241F1A; font-weight:600;\">${value}</p>`;\n}\n\nfunction button(url, label) {\n  return `<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\"><tr><td style=\"background-color:#C1602A; border-radius:4px;\"><a href=\"${url}\" style=\"display:inline-block; padding:12px 28px; font-family: Arial, Helvetica, sans-serif; font-size:14px; font-weight:600; color:#FAF6EF; text-decoration:none;\">${label}</a></td></tr></table>`;\n}\n\nfunction esc(v) {\n  return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\n}\n\n\nconst company_name = esc($('8. Parse Claude JSON').item.json.company_name);\nconst employee_name = esc($('8. Parse Claude JSON').item.json.employee_name);\nconst process_name = esc($('8b. Validate Extraction Quality').item.json.process_name);\nconst call_id = esc($('3. Parse Vapi Payload').item.json.call_id);\nconst docUrl = 'https://docs.google.com/document/d/' + $('16b. Copy Template Doc (Unmatched)').item.json.id + '/edit';\n\nconst body = `<p style=\"margin:0 0 20px; color:#B3452D; font-weight:600;\">Action required: this call could not be matched to a known company.</p>` +\n  field('Raw company name', company_name) +\n  field('Employee', employee_name) +\n  field('Process', process_name) +\n  field('Call ID', call_id) +\n  `<div style=\"margin-top:8px;\">` + button(docUrl, 'View SOP Document (Unmatched folder)') + `</div>`;\n\nreturn [{ json: {\n  subject: 'ACTION REQUIRED — SOPBot: Unmatched Company on Call',\n  html: wrap('Unmatched company on call', body)\n} }];\n"
+        },
+        "id": "build-ops-alert-html",
+        "name": "12b-html. Build Ops Alert HTML",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2536,
+          -168
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "\nfunction wrap(title, bodyHtml) {\n  return `<html><head><meta charset=\"utf-8\"></head><body style=\"margin:0; padding:0; background-color:#FAF6EF;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FAF6EF;\">\n<tr><td align=\"center\" style=\"padding: 40px 16px;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:560px; background-color:#ffffff; border-radius:8px; overflow:hidden; border:1px solid #E3D9C6;\">\n<tr><td style=\"background-color:#241F1A; padding:28px 32px;\">\n<span style=\"font-family: Georgia, &quot;Times New Roman&quot;, serif; font-size:22px; color:#FAF6EF; font-weight:bold;\">SOPBot<span style=\"color:#E2934F;\">.</span></span>\n</td></tr>\n<tr><td style=\"padding:36px 32px 8px;\">\n<h1 style=\"margin:0; font-family: Georgia, &quot;Times New Roman&quot;, serif; font-size:22px; font-weight:600; color:#241F1A;\">${title}</h1>\n</td></tr>\n<tr><td style=\"padding:16px 32px 32px; font-family: Arial, Helvetica, sans-serif; font-size:15px; line-height:1.6; color:#5C5348;\">\n${bodyHtml}\n</td></tr>\n<tr><td style=\"padding:8px 32px 32px; font-family: Arial, Helvetica, sans-serif; font-size:12px; color:#9B9184; border-top:1px solid #E3D9C6;\">\n<p style=\"margin:20px 0 0;\">SOPBot by DadaAI</p>\n</td></tr>\n</table>\n</td></tr>\n</table>\n</body></html>`;\n}\n\nfunction field(label, value) {\n  return `<p style=\"margin:0 0 4px; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; color:#C1602A; font-weight:bold;\">${label}</p><p style=\"margin:0 0 16px; font-size:15px; color:#241F1A; font-weight:600;\">${value}</p>`;\n}\n\nfunction button(url, label) {\n  return `<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\"><tr><td style=\"background-color:#C1602A; border-radius:4px;\"><a href=\"${url}\" style=\"display:inline-block; padding:12px 28px; font-family: Arial, Helvetica, sans-serif; font-size:14px; font-weight:600; color:#FAF6EF; text-decoration:none;\">${label}</a></td></tr></table>`;\n}\n\nfunction esc(v) {\n  return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\n}\n\n\nconst employee_name = esc($('8. Parse Claude JSON').item.json.employee_name);\nconst process_name = esc($('8b. Validate Extraction Quality').item.json.process_name);\nconst docUrl = 'https://docs.google.com/document/d/' + $('16a. Copy Template Doc').item.json.id + '/edit';\n\nconst body = `<p style=\"margin:0 0 16px;\">Hi ${employee_name},</p>` +\n  `<p style=\"margin:0 0 16px;\">Thanks for walking through your process on the call. Here's the SOP that was generated from it.</p>` +\n  `<div style=\"margin:20px 0;\">` + button(docUrl, 'View your SOP') + `</div>` +\n  `<p style=\"margin:16px 0 0; font-size:14px; color:#9B9184;\">You can also find it anytime in your team's SOPBot dashboard.</p>`;\n\nreturn [{ json: {\n  subject: 'Your SOP is ready: ' + $('8b. Validate Extraction Quality').item.json.process_name,\n  html: wrap('Your SOP is ready', body)\n} }];\n"
+        },
+        "id": "build-employee-email-html",
+        "name": "12d-html. Build Employee Email HTML",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          3656,
+          -360
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "\nfunction wrap(title, bodyHtml) {\n  return `<html><head><meta charset=\"utf-8\"></head><body style=\"margin:0; padding:0; background-color:#FAF6EF;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FAF6EF;\">\n<tr><td align=\"center\" style=\"padding: 40px 16px;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:560px; background-color:#ffffff; border-radius:8px; overflow:hidden; border:1px solid #E3D9C6;\">\n<tr><td style=\"background-color:#241F1A; padding:28px 32px;\">\n<span style=\"font-family: Georgia, &quot;Times New Roman&quot;, serif; font-size:22px; color:#FAF6EF; font-weight:bold;\">SOPBot<span style=\"color:#E2934F;\">.</span></span>\n</td></tr>\n<tr><td style=\"padding:36px 32px 8px;\">\n<h1 style=\"margin:0; font-family: Georgia, &quot;Times New Roman&quot;, serif; font-size:22px; font-weight:600; color:#241F1A;\">${title}</h1>\n</td></tr>\n<tr><td style=\"padding:16px 32px 32px; font-family: Arial, Helvetica, sans-serif; font-size:15px; line-height:1.6; color:#5C5348;\">\n${bodyHtml}\n</td></tr>\n<tr><td style=\"padding:8px 32px 32px; font-family: Arial, Helvetica, sans-serif; font-size:12px; color:#9B9184; border-top:1px solid #E3D9C6;\">\n<p style=\"margin:20px 0 0;\">SOPBot by DadaAI</p>\n</td></tr>\n</table>\n</td></tr>\n</table>\n</body></html>`;\n}\n\nfunction field(label, value) {\n  return `<p style=\"margin:0 0 4px; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; color:#C1602A; font-weight:bold;\">${label}</p><p style=\"margin:0 0 16px; font-size:15px; color:#241F1A; font-weight:600;\">${value}</p>`;\n}\n\nfunction button(url, label) {\n  return `<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\"><tr><td style=\"background-color:#C1602A; border-radius:4px;\"><a href=\"${url}\" style=\"display:inline-block; padding:12px 28px; font-family: Arial, Helvetica, sans-serif; font-size:14px; font-weight:600; color:#FAF6EF; text-decoration:none;\">${label}</a></td></tr></table>`;\n}\n\nfunction esc(v) {\n  return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\n}\n\n\nconst company_name = esc($('8. Parse Claude JSON').item.json.company_name);\nconst employee_name = esc($('8. Parse Claude JSON').item.json.employee_name);\nconst process_name = esc($('8b. Validate Extraction Quality').item.json.process_name);\nconst docUrl = 'https://docs.google.com/document/d/' + $('16a. Copy Template Doc').item.json.id + '/edit';\n\nconst body = `<p style=\"margin:0 0 20px;\">A SOPBot call just completed.</p>` +\n  field('Company', company_name) +\n  field('Employee', employee_name) +\n  field('Process', process_name) +\n  `<div style=\"margin-top:8px;\">` + button(docUrl, 'View SOP Document') + `</div>`;\n\nreturn [{ json: {\n  subject: 'SOPBot call completed: ' + $('8b. Validate Extraction Quality').item.json.process_name,\n  html: wrap('SOPBot call completed', body)\n} }];\n"
+        },
+        "id": "build-dwayne-email-html",
+        "name": "12g-html. Build Dwayne Email HTML",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2984,
+          -360
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "={{ 'https://docs.googleapis.com/v1/documents/' + $('16a. Copy Template Doc').item.json.id + ':batchUpdate' }}",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "googleDocsOAuth2Api",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ (function() { const extra = $('14a. Prepare Doc Fields (Matched)').item.json.extra_sections_text; if (!extra) { return JSON.stringify({ requests: [] }); } return JSON.stringify({ requests: [{ insertText: { endOfSegmentLocation: { segmentId: '' }, text: extra } }] }); })() }}",
+          "options": {}
+        },
+        "id": "append-extra-processes-matched",
+        "name": "17a2. Append Extra Processes",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2328,
+          -260
+        ],
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "googleDocsOAuth2Api": {
+            "id": "qrPo0SgXYZGJmTMY",
+            "name": "DadaAI Google Docs OAuth2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "={{ 'https://docs.googleapis.com/v1/documents/' + $('16b. Copy Template Doc (Unmatched)').item.json.id + ':batchUpdate' }}",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "googleDocsOAuth2Api",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ (function() { const extra = $('14b. Prepare Doc Fields (Unmatched)').item.json.extra_sections_text; if (!extra) { return JSON.stringify({ requests: [] }); } return JSON.stringify({ requests: [{ insertText: { endOfSegmentLocation: { segmentId: '' }, text: extra } }] }); })() }}",
+          "options": {}
+        },
+        "id": "append-extra-processes-unmatched",
+        "name": "17b2. Append Extra Processes (Unmatched)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2328,
+          -68
+        ],
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "googleDocsOAuth2Api": {
+            "id": "qrPo0SgXYZGJmTMY",
+            "name": "DadaAI Google Docs OAuth2"
+          }
+        }
       }
     ],
     "connections": {
@@ -1509,7 +1619,7 @@
         "main": [
           [
             {
-              "node": "18a. Patch SOP Doc URL",
+              "node": "17a2. Append Extra Processes",
               "type": "main",
               "index": 0
             }
@@ -1542,7 +1652,7 @@
         "main": [
           [
             {
-              "node": "18b. Patch SOP Doc URL (Unmatched)",
+              "node": "17b2. Append Extra Processes (Unmatched)",
               "type": "main",
               "index": 0
             }
@@ -1564,7 +1674,7 @@
         "main": [
           [
             {
-              "node": "12b. Ops Alert (GHL)",
+              "node": "12b-html. Build Ops Alert HTML",
               "type": "main",
               "index": 0
             }
@@ -1587,7 +1697,7 @@
         "main": [
           [
             {
-              "node": "12d. Employee Email (GHL)",
+              "node": "12d-html. Build Employee Email HTML",
               "type": "main",
               "index": 0
             }
@@ -1625,7 +1735,7 @@
         "main": [
           [
             {
-              "node": "12g. Dwayne Notification (GHL)",
+              "node": "12g-html. Build Dwayne Email HTML",
               "type": "main",
               "index": 0
             }
@@ -1669,7 +1779,7 @@
         "main": [
           [
             {
-              "node": "12a. Owner Email (GHL)",
+              "node": "12a-html. Build Owner Email HTML",
               "type": "main",
               "index": 0
             }
@@ -1737,6 +1847,72 @@
             }
           ]
         ]
+      },
+      "12a-html. Build Owner Email HTML": {
+        "main": [
+          [
+            {
+              "node": "12a. Owner Email (GHL)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "12b-html. Build Ops Alert HTML": {
+        "main": [
+          [
+            {
+              "node": "12b. Ops Alert (GHL)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "12d-html. Build Employee Email HTML": {
+        "main": [
+          [
+            {
+              "node": "12d. Employee Email (GHL)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "12g-html. Build Dwayne Email HTML": {
+        "main": [
+          [
+            {
+              "node": "12g. Dwayne Notification (GHL)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "17a2. Append Extra Processes": {
+        "main": [
+          [
+            {
+              "node": "18a. Patch SOP Doc URL",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "17b2. Append Extra Processes (Unmatched)": {
+        "main": [
+          [
+            {
+              "node": "18b. Patch SOP Doc URL (Unmatched)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       }
     },
     "settings": {
@@ -1750,9 +1926,9 @@
     },
     "nodeGroups": [],
     "pinData": {},
-    "versionId": "93d8f2f3-4571-42ef-bf77-92027cd37ea7",
-    "activeVersionId": "93d8f2f3-4571-42ef-bf77-92027cd37ea7",
-    "versionCounter": 107,
+    "versionId": "d77f6be9-ba98-4f20-8990-72d7a6046aec",
+    "activeVersionId": "d77f6be9-ba98-4f20-8990-72d7a6046aec",
+    "versionCounter": 112,
     "triggerCount": 1,
     "sourceWorkflowId": null,
     "shared": [
@@ -1777,9 +1953,9 @@
     ],
     "tags": [],
     "activeVersion": {
-      "updatedAt": "2026-09-22T11:54:55.443Z",
-      "createdAt": "2026-09-22T11:54:55.443Z",
-      "versionId": "93d8f2f3-4571-42ef-bf77-92027cd37ea7",
+      "updatedAt": "2026-09-23T09:18:44.183Z",
+      "createdAt": "2026-09-23T09:18:44.183Z",
+      "versionId": "d77f6be9-ba98-4f20-8990-72d7a6046aec",
       "workflowId": "fFboHgba81r265CZ",
       "nodes": [
         {
@@ -1800,7 +1976,7 @@
           "webhookId": "sopbot-call-ended",
           "credentials": {
             "httpHeaderAuth": {
-              "id": "ZJhmua8tY5wvs2T2",
+              "id": "vCQ7f4vdp4qj4Hif",
               "name": "DadaAI Vapi Webhook Secret"
             }
           }
@@ -1955,7 +2131,7 @@
             },
             "sendBody": true,
             "specifyBody": "json",
-            "jsonBody": "={{ JSON.stringify({\n  model: \"claude-sonnet-4-6\",\n  max_tokens: 4096,\n  system: \"You are SOPBot, an expert business process analyst. Extract a structured SOP from this call transcript. Respond with valid JSON only, no markdown fences, matching this schema: {\\\"process_name\\\":\\\"string\\\",\\\"department\\\":\\\"string|null\\\",\\\"process_owner\\\":\\\"string|null\\\",\\\"company_name\\\":\\\"string\\\",\\\"employee_name\\\":\\\"string|null\\\",\\\"employee_role\\\":\\\"string|null\\\",\\\"employee_tenure\\\":\\\"string|null\\\",\\\"employee_email\\\":\\\"string|null - the email address they gave to receive a copy of this SOP\\\",\\\"role_summary\\\":\\\"string|null - one or two sentences on what the role is responsible for\\\",\\\"process_trigger\\\":\\\"string|null - what kicks the process off\\\",\\\"frequency\\\":\\\"string|null\\\",\\\"steps\\\":[{\\\"step_number\\\":1,\\\"title\\\":\\\"string\\\",\\\"description\\\":\\\"string\\\",\\\"tools_used\\\":[\\\"strings\\\"],\\\"decision_points\\\":[\\\"plain strings only, e.g. If X then Y\\\"],\\\"common_errors\\\":[\\\"plain strings only\\\"],\\\"pain_points\\\":[\\\"plain strings only\\\"],\\\"completion_indicator\\\":\\\"string|null - how you know this step is done\\\"}],\\\"inputs\\\":[],\\\"outputs\\\":[],\\\"systems_used\\\":[],\\\"tools_and_resources\\\":[\\\"deduplicated list of all tools\\\"],\\\"exceptions\\\":[],\\\"exception_handling\\\":[\\\"plain strings only, formatted as: If X, then Y\\\"],\\\"completion_criteria\\\":\\\"string|null - final output or result that tells you the whole process is complete\\\",\\\"insider_notes\\\":\\\"string|null - things a new hire would get wrong\\\",\\\"notes\\\":\\\"string|null\\\"}. All array items must be plain strings, never nested objects. Extract ONLY what the employee said; use null or empty arrays for anything not captured.\",\n  messages: [{ role: \"user\", content: \"TRANSCRIPT:\\n\" + $('3. Parse Vapi Payload').item.json.transcript }]\n}) }}",
+            "jsonBody": "={{ JSON.stringify({\n  model: \"claude-sonnet-4-6\",\n  max_tokens: 4096,\n  system: \"You are SOPBot, an expert business process analyst. An employee may describe ONE OR MORE distinct processes in a single call. Extract a structured record from this call transcript. Respond with valid JSON only, no markdown fences, matching this schema: {\\\"company_name\\\":\\\"string\\\",\\\"employee_name\\\":\\\"string|null\\\",\\\"employee_role\\\":\\\"string|null\\\",\\\"employee_tenure\\\":\\\"string|null\\\",\\\"employee_email\\\":\\\"string|null - the email address they gave to receive a copy of this SOP\\\",\\\"processes\\\":[{\\\"process_name\\\":\\\"string\\\",\\\"department\\\":\\\"string|null\\\",\\\"process_owner\\\":\\\"string|null\\\",\\\"role_summary\\\":\\\"string|null - one or two sentences on what this process is responsible for\\\",\\\"process_trigger\\\":\\\"string|null - what kicks the process off\\\",\\\"frequency\\\":\\\"string|null\\\",\\\"steps\\\":[{\\\"step_number\\\":1,\\\"title\\\":\\\"string\\\",\\\"description\\\":\\\"string\\\",\\\"tools_used\\\":[\\\"strings\\\"],\\\"decision_points\\\":[\\\"plain strings only, e.g. If X then Y\\\"],\\\"common_errors\\\":[\\\"plain strings only\\\"],\\\"pain_points\\\":[\\\"plain strings only\\\"],\\\"completion_indicator\\\":\\\"string|null - how you know this step is done\\\"}],\\\"tools_and_resources\\\":[\\\"deduplicated list of all tools for this process\\\"],\\\"exception_handling\\\":[\\\"plain strings only, formatted as: If X, then Y\\\"],\\\"completion_criteria\\\":\\\"string|null - final output or result that tells you this process is complete\\\",\\\"insider_notes\\\":\\\"string|null - things a new hire would get wrong\\\",\\\"notes\\\":\\\"string|null\\\"}]}. Treat each clearly distinct process the employee describes as a separate entry in the \\\\\\\"processes\\\\\\\" array, in the order they were discussed. If only one process was described, return an array with exactly one entry. All array items must be plain strings, never nested objects. Extract ONLY what the employee said; use null or empty arrays for anything not captured.\",\n  messages: [{ role: \"user\", content: \"TRANSCRIPT:\\n\" + $('3. Parse Vapi Payload').item.json.transcript }]\n}) }}",
             "options": {
               "timeout": 60000
             }
@@ -2088,7 +2264,7 @@
               "value": {
                 "id": "={{ $('6. Create Processing Row').item.json.id }}",
                 "Employee Name": "={{ $('8. Parse Claude JSON').item.json.employee_name }}",
-                "Process Name": "={{ $('8. Parse Claude JSON').item.json.process_name }}",
+                "Process Name": "={{ $('8b. Validate Extraction Quality').item.json.process_name }}",
                 "Company Raw": "={{ $('8. Parse Claude JSON').item.json.company_name }}",
                 "Status": "Matched"
               },
@@ -2132,7 +2308,7 @@
               "value": {
                 "id": "={{ $('6. Create Processing Row').item.json.id }}",
                 "Employee Name": "={{ $('8. Parse Claude JSON').item.json.employee_name }}",
-                "Process Name": "={{ $('8. Parse Claude JSON').item.json.process_name }}",
+                "Process Name": "={{ $('8b. Validate Extraction Quality').item.json.process_name }}",
                 "Company Raw": "={{ $('8. Parse Claude JSON').item.json.company_name }}",
                 "Status": "Unmatched"
               },
@@ -2179,7 +2355,7 @@
             },
             "sendBody": true,
             "specifyBody": "json",
-            "jsonBody": "={{ JSON.stringify({\n  type: \"Email\",\n  contactId: $('9b. Normalize Company Match').item.json.ghl_contact_id,\n  subject: \"New SOP Ready: \" + $('8. Parse Claude JSON').item.json.process_name + \" â€” \" + $('8. Parse Claude JSON').item.json.employee_name,\n  html: \"<p>A new SOP has been generated.</p><p>Process: \" + $('8. Parse Claude JSON').item.json.process_name + \"</p><p>Company: \" + $('8. Parse Claude JSON').item.json.company_name + \"</p><p><a href='https://docs.google.com/document/d/\" + $('16a. Copy Template Doc').item.json.id + \"/edit'>View SOP Document</a></p>\"\n}) }}",
+            "jsonBody": "={{ JSON.stringify({ type: \"Email\", contactId: $('9b. Normalize Company Match').item.json.ghl_contact_id, subject: $json.subject, html: $json.html }) }}",
             "options": {}
           },
           "id": "owner-email-ghl",
@@ -2221,7 +2397,7 @@
             },
             "sendBody": true,
             "specifyBody": "json",
-            "jsonBody": "={{ JSON.stringify({\n  type: \"Email\",\n  contactId: \"FGRKMuONxezAC6d940BJ\",\n  subject: \"ACTION REQUIRED â€” SOPBot: Unmatched Company on Call\",\n  html: \"<p>Unmatched company on a SOPBot call.</p><p>Raw name: \" + $('8. Parse Claude JSON').item.json.company_name + \"</p><p>Employee: \" + $('8. Parse Claude JSON').item.json.employee_name + \"</p><p>Process: \" + $('8. Parse Claude JSON').item.json.process_name + \"</p><p>Call ID: \" + $('3. Parse Vapi Payload').item.json.call_id + \"</p><p><a href='https://docs.google.com/document/d/\" + $('16b. Copy Template Doc (Unmatched)').item.json.id + \"/edit'>View SOP Document (Unmatched folder)</a></p>\"\n}) }}",
+            "jsonBody": "={{ JSON.stringify({ type: \"Email\", contactId: \"FGRKMuONxezAC6d940BJ\", subject: $json.subject, html: $json.html }) }}",
             "options": {}
           },
           "id": "ops-alert-ghl",
@@ -2244,7 +2420,7 @@
         },
         {
           "parameters": {
-            "jsCode": "const data = $input.first().json;\nconst company = (data.company_name || '').trim();\n// Strip common legal suffixes so 'Acme Inc' and 'Acme' match the same\n// client record - see docs/adr or session notes on the company-name\n// matching fix. Used by both the Airtable Company Router formula and\n// the Supabase client lookup (18c), so both branches match consistently.\nconst companyNormalized = company.toLowerCase().replace(/\\s*[,.]?\\s*(inc|llc|ltd|corp|co|company)\\.?\\s*$/, '').trim();\nconst steps = Array.isArray(data.steps) ? data.steps : [];\nconst isLowQuality = !company || company.toLowerCase() === 'unknown' || steps.length === 0;\nreturn [{ json: { ...data, company_name: company, company_name_normalized: companyNormalized, _low_quality: isLowQuality, _quality_reason: isLowQuality ? ('Claude extraction produced insufficient data: company=' + JSON.stringify(company) + ', steps=' + steps.length) : null } }];"
+            "jsCode": "\nconst data = $input.first().json;\nconst company = (data.company_name || '').trim();\n// Strip common legal suffixes so 'Acme Inc' and 'Acme' match the same\n// client record - see docs/adr or session notes on the company-name\n// matching fix. Used by both the Airtable Company Router formula and\n// the Supabase client lookup (18c), so both branches match consistently.\nconst companyNormalized = company.toLowerCase().replace(/\\s*[,.]?\\s*(inc|llc|ltd|corp|co|company)\\.?\\s*$/, '').trim();\nconst processes = Array.isArray(data.processes) ? data.processes : [];\nconst hasAnySteps = processes.some(function(p) { return Array.isArray(p.steps) && p.steps.length > 0; });\nconst isLowQuality = !company || company.toLowerCase() === 'unknown' || processes.length === 0 || !hasAnySteps;\n\n// One employee can now describe multiple processes in a single call. Every\n// node downstream that used to read a single top-level process_name (Airtable\n// status rows, Supabase call log, GHL notification emails) still needs ONE\n// string to log/display, so compute a joined summary here rather than patching\n// each consumer to branch on array length individually.\nconst processNames = processes.map(function(p) { return p.process_name; }).filter(Boolean);\nconst processSummary = processNames.length ? processNames.join(', ') : 'Unknown process';\n\nreturn [{ json: { ...data, company_name: company, company_name_normalized: companyNormalized, process_name: processSummary, process_summary: processSummary, process_count: processes.length, _low_quality: isLowQuality, _quality_reason: isLowQuality ? ('Claude extraction produced insufficient data: company=' + JSON.stringify(company) + ', processes=' + processes.length) : null } }];\n"
           },
           "id": "validate-extraction-quality",
           "name": "8b. Validate Extraction Quality",
@@ -2333,7 +2509,7 @@
         },
         {
           "parameters": {
-            "jsCode": "const NL = String.fromCharCode(10);\nconst data = $('8. Parse Claude JSON').item.json;\n\nfunction esc(s) { return (s === null || s === undefined) ? '' : String(s); }\n\nconst stepsBlock = (data.steps || []).map(function(s) {\n  const tools = (s.tools_used || []).join(', ') || 'None specified';\n  const notes = [].concat(s.decision_points || [], s.pain_points || [], s.common_errors || []).map(function(x){ return typeof x === 'string' ? x : JSON.stringify(x); }).join('; ') || 'None';\n  const done = s.completion_indicator || 'Not specified';\n  const parts = [\n    'Step ' + s.step_number + ': ' + esc(s.action || s.title),\n    'Tools: ' + tools,\n    'Notes: ' + notes,\n    'Done when: ' + done\n  ];\n  return parts.join(NL);\n}).join(NL + NL);\n\nconst toolsSet = new Set();\n(data.steps || []).forEach(function(s) { (s.tools_used || []).forEach(function(t) { toolsSet.add(t); }); });\n(data.tools_and_resources || []).forEach(function(t) { toolsSet.add(t); });\nconst toolsList = Array.from(toolsSet).join(', ') || 'None specified';\n\nconst exceptionHandling = (data.exception_handling || []).length\n  ? data.exception_handling.map(function(e) {\n      return typeof e === 'string' ? e : ('If ' + (e.if || e.condition) + ': ' + (e.then || e.action));\n    }).join(NL)\n  : 'None captured during this call.';\n\nconst today = new Date().toISOString().slice(0, 10);\n\nreturn [{\n  json: {\n    doc_name: esc(data.employee_name) + ' - ' + esc(data.process_name),\n    tokens: {\n      '{{COMPANY_NAME}}': esc(data.company_name),\n      '{{PROCESS_NAME}}': esc(data.process_name),\n      '{{EMPLOYEE_ROLE}}': esc(data.employee_role),\n      '{{EMPLOYEE_NAME}}': esc(data.employee_name),\n      '{{EMPLOYEE_TENURE}}': esc(data.employee_tenure),\n      '{{DATE}}': today,\n      '{{PROCESS_FREQUENCY}}': esc(data.frequency || data.process_frequency),\n      '{{ROLE_SUMMARY}}': esc(data.role_summary),\n      '{{PROCESS_TRIGGER}}': esc(data.process_trigger),\n      '{{TOOLS_LIST}}': toolsList,\n      '{{STEPS_BLOCK}}': stepsBlock || 'No steps captured.',\n      '{{EXCEPTION_HANDLING}}': exceptionHandling,\n      '{{COMPLETION_CRITERIA}}': esc(data.completion_criteria),\n      '{{INSIDER_NOTES}}': esc(data.insider_notes || data.notes)\n    }\n  }\n}];\n"
+            "jsCode": "\nconst NL = String.fromCharCode(10);\nconst data = $('8. Parse Claude JSON').item.json;\n\nfunction esc(s) { return (s === null || s === undefined) ? '' : String(s); }\n\nfunction renderSteps(steps) {\n  return (steps || []).map(function(s) {\n    const tools = (s.tools_used || []).join(', ') || 'None specified';\n    const notes = [].concat(s.decision_points || [], s.pain_points || [], s.common_errors || []).map(function(x){ return typeof x === 'string' ? x : JSON.stringify(x); }).join('; ') || 'None';\n    const done = s.completion_indicator || 'Not specified';\n    const parts = [\n      'Step ' + s.step_number + ': ' + esc(s.action || s.title),\n      'Tools: ' + tools,\n      'Notes: ' + notes,\n      'Done when: ' + done\n    ];\n    return parts.join(NL);\n  }).join(NL + NL);\n}\n\nfunction renderToolsList(process) {\n  const toolsSet = new Set();\n  (process.steps || []).forEach(function(s) { (s.tools_used || []).forEach(function(t) { toolsSet.add(t); }); });\n  (process.tools_and_resources || []).forEach(function(t) { toolsSet.add(t); });\n  return Array.from(toolsSet).join(', ') || 'None specified';\n}\n\nfunction renderExceptionHandling(process) {\n  return (process.exception_handling || []).length\n    ? process.exception_handling.map(function(e) {\n        return typeof e === 'string' ? e : ('If ' + (e.if || e.condition) + ': ' + (e.then || e.action));\n      }).join(NL)\n    : 'None captured during this call.';\n}\n\nconst processes = Array.isArray(data.processes) && data.processes.length ? data.processes : [{}];\nconst first = processes[0];\nconst extra = processes.slice(1);\n\nconst today = new Date().toISOString().slice(0, 10);\n\n// Plain-text block for each additional process, appended to the doc after\n// the template's own (first-process) section. Kept as plain text + simple\n// line breaks since it's inserted via Google Docs insertText, not through\n// the template's own formatting.\nconst extraSections = extra.map(function(p) {\n  const lines = [];\n  lines.push('');\n  lines.push('----------------------------------------');\n  lines.push('PROCESS: ' + esc(p.process_name));\n  lines.push('----------------------------------------');\n  if (p.department) lines.push('Department: ' + esc(p.department));\n  if (p.process_owner) lines.push('Process owner: ' + esc(p.process_owner));\n  if (p.role_summary) lines.push('Summary: ' + esc(p.role_summary));\n  if (p.process_trigger) lines.push('Trigger: ' + esc(p.process_trigger));\n  if (p.frequency) lines.push('Frequency: ' + esc(p.frequency));\n  lines.push('');\n  lines.push('Tools: ' + renderToolsList(p));\n  lines.push('');\n  lines.push('Steps:');\n  lines.push(renderSteps(p.steps) || 'No steps captured.');\n  lines.push('');\n  lines.push('Exception handling:');\n  lines.push(renderExceptionHandling(p));\n  if (p.completion_criteria) {\n    lines.push('');\n    lines.push('Completion criteria: ' + esc(p.completion_criteria));\n  }\n  if (p.insider_notes || p.notes) {\n    lines.push('');\n    lines.push('Notes: ' + esc(p.insider_notes || p.notes));\n  }\n  return lines.join(NL);\n}).join(NL);\n\nreturn [{\n  json: {\n    doc_name: esc(data.employee_name) || 'Unnamed employee',\n    process_count: processes.length,\n    extra_sections_text: extraSections,\n    tokens: {\n      '{{COMPANY_NAME}}': esc(data.company_name),\n      '{{PROCESS_NAME}}': esc(first.process_name),\n      '{{EMPLOYEE_ROLE}}': esc(data.employee_role),\n      '{{EMPLOYEE_NAME}}': esc(data.employee_name),\n      '{{EMPLOYEE_TENURE}}': esc(data.employee_tenure),\n      '{{DATE}}': today,\n      '{{PROCESS_FREQUENCY}}': esc(first.frequency),\n      '{{ROLE_SUMMARY}}': esc(first.role_summary),\n      '{{PROCESS_TRIGGER}}': esc(first.process_trigger),\n      '{{TOOLS_LIST}}': renderToolsList(first),\n      '{{STEPS_BLOCK}}': renderSteps(first.steps) || 'No steps captured.',\n      '{{EXCEPTION_HANDLING}}': renderExceptionHandling(first),\n      '{{COMPLETION_CRITERIA}}': esc(first.completion_criteria),\n      '{{INSIDER_NOTES}}': esc(first.insider_notes || first.notes)\n    }\n  }\n}];\n"
           },
           "id": "prepare-doc-fields-matched",
           "name": "14a. Prepare Doc Fields (Matched)",
@@ -2346,7 +2522,7 @@
         },
         {
           "parameters": {
-            "jsCode": "const NL = String.fromCharCode(10);\nconst data = $('8. Parse Claude JSON').item.json;\n\nfunction esc(s) { return (s === null || s === undefined) ? '' : String(s); }\n\nconst stepsBlock = (data.steps || []).map(function(s) {\n  const tools = (s.tools_used || []).join(', ') || 'None specified';\n  const notes = [].concat(s.decision_points || [], s.pain_points || [], s.common_errors || []).map(function(x){ return typeof x === 'string' ? x : JSON.stringify(x); }).join('; ') || 'None';\n  const done = s.completion_indicator || 'Not specified';\n  const parts = [\n    'Step ' + s.step_number + ': ' + esc(s.action || s.title),\n    'Tools: ' + tools,\n    'Notes: ' + notes,\n    'Done when: ' + done\n  ];\n  return parts.join(NL);\n}).join(NL + NL);\n\nconst toolsSet = new Set();\n(data.steps || []).forEach(function(s) { (s.tools_used || []).forEach(function(t) { toolsSet.add(t); }); });\n(data.tools_and_resources || []).forEach(function(t) { toolsSet.add(t); });\nconst toolsList = Array.from(toolsSet).join(', ') || 'None specified';\n\nconst exceptionHandling = (data.exception_handling || []).length\n  ? data.exception_handling.map(function(e) {\n      return typeof e === 'string' ? e : ('If ' + (e.if || e.condition) + ': ' + (e.then || e.action));\n    }).join(NL)\n  : 'None captured during this call.';\n\nconst today = new Date().toISOString().slice(0, 10);\n\nreturn [{\n  json: {\n    doc_name: esc(data.employee_name) + ' - ' + esc(data.process_name),\n    tokens: {\n      '{{COMPANY_NAME}}': esc(data.company_name),\n      '{{PROCESS_NAME}}': esc(data.process_name),\n      '{{EMPLOYEE_ROLE}}': esc(data.employee_role),\n      '{{EMPLOYEE_NAME}}': esc(data.employee_name),\n      '{{EMPLOYEE_TENURE}}': esc(data.employee_tenure),\n      '{{DATE}}': today,\n      '{{PROCESS_FREQUENCY}}': esc(data.frequency || data.process_frequency),\n      '{{ROLE_SUMMARY}}': esc(data.role_summary),\n      '{{PROCESS_TRIGGER}}': esc(data.process_trigger),\n      '{{TOOLS_LIST}}': toolsList,\n      '{{STEPS_BLOCK}}': stepsBlock || 'No steps captured.',\n      '{{EXCEPTION_HANDLING}}': exceptionHandling,\n      '{{COMPLETION_CRITERIA}}': esc(data.completion_criteria),\n      '{{INSIDER_NOTES}}': esc(data.insider_notes || data.notes)\n    }\n  }\n}];\n"
+            "jsCode": "\nconst NL = String.fromCharCode(10);\nconst data = $('8. Parse Claude JSON').item.json;\n\nfunction esc(s) { return (s === null || s === undefined) ? '' : String(s); }\n\nfunction renderSteps(steps) {\n  return (steps || []).map(function(s) {\n    const tools = (s.tools_used || []).join(', ') || 'None specified';\n    const notes = [].concat(s.decision_points || [], s.pain_points || [], s.common_errors || []).map(function(x){ return typeof x === 'string' ? x : JSON.stringify(x); }).join('; ') || 'None';\n    const done = s.completion_indicator || 'Not specified';\n    const parts = [\n      'Step ' + s.step_number + ': ' + esc(s.action || s.title),\n      'Tools: ' + tools,\n      'Notes: ' + notes,\n      'Done when: ' + done\n    ];\n    return parts.join(NL);\n  }).join(NL + NL);\n}\n\nfunction renderToolsList(process) {\n  const toolsSet = new Set();\n  (process.steps || []).forEach(function(s) { (s.tools_used || []).forEach(function(t) { toolsSet.add(t); }); });\n  (process.tools_and_resources || []).forEach(function(t) { toolsSet.add(t); });\n  return Array.from(toolsSet).join(', ') || 'None specified';\n}\n\nfunction renderExceptionHandling(process) {\n  return (process.exception_handling || []).length\n    ? process.exception_handling.map(function(e) {\n        return typeof e === 'string' ? e : ('If ' + (e.if || e.condition) + ': ' + (e.then || e.action));\n      }).join(NL)\n    : 'None captured during this call.';\n}\n\nconst processes = Array.isArray(data.processes) && data.processes.length ? data.processes : [{}];\nconst first = processes[0];\nconst extra = processes.slice(1);\n\nconst today = new Date().toISOString().slice(0, 10);\n\n// Plain-text block for each additional process, appended to the doc after\n// the template's own (first-process) section. Kept as plain text + simple\n// line breaks since it's inserted via Google Docs insertText, not through\n// the template's own formatting.\nconst extraSections = extra.map(function(p) {\n  const lines = [];\n  lines.push('');\n  lines.push('----------------------------------------');\n  lines.push('PROCESS: ' + esc(p.process_name));\n  lines.push('----------------------------------------');\n  if (p.department) lines.push('Department: ' + esc(p.department));\n  if (p.process_owner) lines.push('Process owner: ' + esc(p.process_owner));\n  if (p.role_summary) lines.push('Summary: ' + esc(p.role_summary));\n  if (p.process_trigger) lines.push('Trigger: ' + esc(p.process_trigger));\n  if (p.frequency) lines.push('Frequency: ' + esc(p.frequency));\n  lines.push('');\n  lines.push('Tools: ' + renderToolsList(p));\n  lines.push('');\n  lines.push('Steps:');\n  lines.push(renderSteps(p.steps) || 'No steps captured.');\n  lines.push('');\n  lines.push('Exception handling:');\n  lines.push(renderExceptionHandling(p));\n  if (p.completion_criteria) {\n    lines.push('');\n    lines.push('Completion criteria: ' + esc(p.completion_criteria));\n  }\n  if (p.insider_notes || p.notes) {\n    lines.push('');\n    lines.push('Notes: ' + esc(p.insider_notes || p.notes));\n  }\n  return lines.join(NL);\n}).join(NL);\n\nreturn [{\n  json: {\n    doc_name: esc(data.employee_name) || 'Unnamed employee',\n    process_count: processes.length,\n    extra_sections_text: extraSections,\n    tokens: {\n      '{{COMPANY_NAME}}': esc(data.company_name),\n      '{{PROCESS_NAME}}': esc(first.process_name),\n      '{{EMPLOYEE_ROLE}}': esc(data.employee_role),\n      '{{EMPLOYEE_NAME}}': esc(data.employee_name),\n      '{{EMPLOYEE_TENURE}}': esc(data.employee_tenure),\n      '{{DATE}}': today,\n      '{{PROCESS_FREQUENCY}}': esc(first.frequency),\n      '{{ROLE_SUMMARY}}': esc(first.role_summary),\n      '{{PROCESS_TRIGGER}}': esc(first.process_trigger),\n      '{{TOOLS_LIST}}': renderToolsList(first),\n      '{{STEPS_BLOCK}}': renderSteps(first.steps) || 'No steps captured.',\n      '{{EXCEPTION_HANDLING}}': renderExceptionHandling(first),\n      '{{COMPLETION_CRITERIA}}': esc(first.completion_criteria),\n      '{{INSIDER_NOTES}}': esc(first.insider_notes || first.notes)\n    }\n  }\n}];\n"
           },
           "id": "prepare-doc-fields-unmatched",
           "name": "14b. Prepare Doc Fields (Unmatched)",
@@ -2648,7 +2824,7 @@
             },
             "sendBody": true,
             "specifyBody": "json",
-            "jsonBody": "={{ JSON.stringify({\n  type: \"Email\",\n  contactId: $json.contact.id,\n  subject: \"Your SOP is ready: \" + $('8. Parse Claude JSON').item.json.process_name,\n  html: \"<p>Hi \" + $('8. Parse Claude JSON').item.json.employee_name + \",</p><p>Thanks for walking through your process on the call. Here's the SOP that was generated from it:</p><p><a href='https://docs.google.com/document/d/\" + $('16a. Copy Template Doc').item.json.id + \"/edit'>View your SOP</a></p><p>You can also see it in your team's SOPBot dashboard.</p>\"\n}) }}",
+            "jsonBody": "={{ JSON.stringify({ type: \"Email\", contactId: $('12c. Upsert Employee Contact (GHL)').item.json.contact.id, subject: $json.subject, html: $json.html }) }}",
             "options": {}
           },
           "id": "sopbot-employee-email-send",
@@ -2781,7 +2957,7 @@
             },
             "sendBody": true,
             "specifyBody": "json",
-            "jsonBody": "={{ JSON.stringify({ type: \"Email\", contactId: $json.contact.id, subject: \"SOPBot call completed: \" + $('8. Parse Claude JSON').item.json.process_name, html: \"<p>A SOPBot call just completed.</p><p>Company: \" + $('8. Parse Claude JSON').item.json.company_name + \"</p><p>Employee: \" + $('8. Parse Claude JSON').item.json.employee_name + \"</p><p>Process: \" + $('8. Parse Claude JSON').item.json.process_name + \"</p><p><a href='https://docs.google.com/document/d/\" + $('16a. Copy Template Doc').item.json.id + \"/edit'>View SOP Document</a></p>\" }) }}\n",
+            "jsonBody": "={{ JSON.stringify({ type: \"Email\", contactId: $('12f. Upsert Dwayne Contact (GHL)').item.json.contact.id, subject: $json.subject, html: $json.html }) }}",
             "options": {}
           },
           "id": "dd094ac3-5a94-4369-83ae-bc2da42e7f36",
@@ -2856,7 +3032,7 @@
                 },
                 {
                   "fieldId": "process_name",
-                  "fieldValue": "={{ $('8. Parse Claude JSON').item.json.process_name }}"
+                  "fieldValue": "={{ $('8b. Validate Extraction Quality').item.json.process_name }}"
                 },
                 {
                   "fieldId": "employee_name",
@@ -3043,7 +3219,7 @@
         },
         {
           "parameters": {
-            "jsCode": "// Merges both branches (an existing folder found in 15b, or one just\n// created in 15d) into one consistent field for 16a/16b to consume.\nconst item = $input.first().json;\nconst folderId = item.company_folder_id || item.id;\nreturn [{ json: { company_folder_id: folderId } }];"
+            "jsCode": "// Merges both branches (an existing folder found in 15b, or one just\n// created in 15d) into one consistent field for 16a/16b to consume.\n// Also re-attaches the match result from 9b, which this node would\n// otherwise drop - 10. Is Matched? reads $json.matched from THIS node's\n// output, so losing it here silently sent every matched client down the\n// unmatched/ops-alert branch (found via a real test call on 2026-09-23).\nconst item = $input.first().json;\nconst folderId = item.company_folder_id || item.id;\nconst normalizeResult = $('9b. Normalize Company Match').item.json;\nreturn [{ json: { ...normalizeResult, company_folder_id: folderId } }];"
           },
           "id": "resolve-company-folder-id",
           "name": "15e. Resolve Company Folder ID",
@@ -3053,6 +3229,116 @@
             2000,
             -360
           ]
+        },
+        {
+          "parameters": {
+            "jsCode": "\nfunction wrap(title, bodyHtml) {\n  return `<html><head><meta charset=\"utf-8\"></head><body style=\"margin:0; padding:0; background-color:#FAF6EF;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FAF6EF;\">\n<tr><td align=\"center\" style=\"padding: 40px 16px;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:560px; background-color:#ffffff; border-radius:8px; overflow:hidden; border:1px solid #E3D9C6;\">\n<tr><td style=\"background-color:#241F1A; padding:28px 32px;\">\n<span style=\"font-family: Georgia, &quot;Times New Roman&quot;, serif; font-size:22px; color:#FAF6EF; font-weight:bold;\">SOPBot<span style=\"color:#E2934F;\">.</span></span>\n</td></tr>\n<tr><td style=\"padding:36px 32px 8px;\">\n<h1 style=\"margin:0; font-family: Georgia, &quot;Times New Roman&quot;, serif; font-size:22px; font-weight:600; color:#241F1A;\">${title}</h1>\n</td></tr>\n<tr><td style=\"padding:16px 32px 32px; font-family: Arial, Helvetica, sans-serif; font-size:15px; line-height:1.6; color:#5C5348;\">\n${bodyHtml}\n</td></tr>\n<tr><td style=\"padding:8px 32px 32px; font-family: Arial, Helvetica, sans-serif; font-size:12px; color:#9B9184; border-top:1px solid #E3D9C6;\">\n<p style=\"margin:20px 0 0;\">SOPBot by DadaAI</p>\n</td></tr>\n</table>\n</td></tr>\n</table>\n</body></html>`;\n}\n\nfunction field(label, value) {\n  return `<p style=\"margin:0 0 4px; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; color:#C1602A; font-weight:bold;\">${label}</p><p style=\"margin:0 0 16px; font-size:15px; color:#241F1A; font-weight:600;\">${value}</p>`;\n}\n\nfunction button(url, label) {\n  return `<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\"><tr><td style=\"background-color:#C1602A; border-radius:4px;\"><a href=\"${url}\" style=\"display:inline-block; padding:12px 28px; font-family: Arial, Helvetica, sans-serif; font-size:14px; font-weight:600; color:#FAF6EF; text-decoration:none;\">${label}</a></td></tr></table>`;\n}\n\nfunction esc(v) {\n  return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\n}\n\n\nconst process_name = esc($('8b. Validate Extraction Quality').item.json.process_name);\nconst employee_name = esc($('8. Parse Claude JSON').item.json.employee_name);\nconst company_name = esc($('8. Parse Claude JSON').item.json.company_name);\nconst docUrl = 'https://docs.google.com/document/d/' + $('16a. Copy Template Doc').item.json.id + '/edit';\n\nconst body = `<p style=\"margin:0 0 20px;\">A new SOP has been generated from a SOPBot call.</p>` +\n  field('Process', process_name) +\n  field('Employee', employee_name) +\n  field('Company', company_name) +\n  `<div style=\"margin-top:8px;\">` + button(docUrl, 'View SOP Document') + `</div>`;\n\nreturn [{ json: {\n  subject: 'New SOP Ready: ' + $('8b. Validate Extraction Quality').item.json.process_name + ' — ' + $('8. Parse Claude JSON').item.json.employee_name,\n  html: wrap('New SOP ready', body)\n} }];\n"
+          },
+          "id": "build-owner-email-html",
+          "name": "12a-html. Build Owner Email HTML",
+          "type": "n8n-nodes-base.code",
+          "typeVersion": 2,
+          "position": [
+            2536,
+            -360
+          ]
+        },
+        {
+          "parameters": {
+            "jsCode": "\nfunction wrap(title, bodyHtml) {\n  return `<html><head><meta charset=\"utf-8\"></head><body style=\"margin:0; padding:0; background-color:#FAF6EF;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FAF6EF;\">\n<tr><td align=\"center\" style=\"padding: 40px 16px;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:560px; background-color:#ffffff; border-radius:8px; overflow:hidden; border:1px solid #E3D9C6;\">\n<tr><td style=\"background-color:#241F1A; padding:28px 32px;\">\n<span style=\"font-family: Georgia, &quot;Times New Roman&quot;, serif; font-size:22px; color:#FAF6EF; font-weight:bold;\">SOPBot<span style=\"color:#E2934F;\">.</span></span>\n</td></tr>\n<tr><td style=\"padding:36px 32px 8px;\">\n<h1 style=\"margin:0; font-family: Georgia, &quot;Times New Roman&quot;, serif; font-size:22px; font-weight:600; color:#241F1A;\">${title}</h1>\n</td></tr>\n<tr><td style=\"padding:16px 32px 32px; font-family: Arial, Helvetica, sans-serif; font-size:15px; line-height:1.6; color:#5C5348;\">\n${bodyHtml}\n</td></tr>\n<tr><td style=\"padding:8px 32px 32px; font-family: Arial, Helvetica, sans-serif; font-size:12px; color:#9B9184; border-top:1px solid #E3D9C6;\">\n<p style=\"margin:20px 0 0;\">SOPBot by DadaAI</p>\n</td></tr>\n</table>\n</td></tr>\n</table>\n</body></html>`;\n}\n\nfunction field(label, value) {\n  return `<p style=\"margin:0 0 4px; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; color:#C1602A; font-weight:bold;\">${label}</p><p style=\"margin:0 0 16px; font-size:15px; color:#241F1A; font-weight:600;\">${value}</p>`;\n}\n\nfunction button(url, label) {\n  return `<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\"><tr><td style=\"background-color:#C1602A; border-radius:4px;\"><a href=\"${url}\" style=\"display:inline-block; padding:12px 28px; font-family: Arial, Helvetica, sans-serif; font-size:14px; font-weight:600; color:#FAF6EF; text-decoration:none;\">${label}</a></td></tr></table>`;\n}\n\nfunction esc(v) {\n  return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\n}\n\n\nconst company_name = esc($('8. Parse Claude JSON').item.json.company_name);\nconst employee_name = esc($('8. Parse Claude JSON').item.json.employee_name);\nconst process_name = esc($('8b. Validate Extraction Quality').item.json.process_name);\nconst call_id = esc($('3. Parse Vapi Payload').item.json.call_id);\nconst docUrl = 'https://docs.google.com/document/d/' + $('16b. Copy Template Doc (Unmatched)').item.json.id + '/edit';\n\nconst body = `<p style=\"margin:0 0 20px; color:#B3452D; font-weight:600;\">Action required: this call could not be matched to a known company.</p>` +\n  field('Raw company name', company_name) +\n  field('Employee', employee_name) +\n  field('Process', process_name) +\n  field('Call ID', call_id) +\n  `<div style=\"margin-top:8px;\">` + button(docUrl, 'View SOP Document (Unmatched folder)') + `</div>`;\n\nreturn [{ json: {\n  subject: 'ACTION REQUIRED — SOPBot: Unmatched Company on Call',\n  html: wrap('Unmatched company on call', body)\n} }];\n"
+          },
+          "id": "build-ops-alert-html",
+          "name": "12b-html. Build Ops Alert HTML",
+          "type": "n8n-nodes-base.code",
+          "typeVersion": 2,
+          "position": [
+            2536,
+            -168
+          ]
+        },
+        {
+          "parameters": {
+            "jsCode": "\nfunction wrap(title, bodyHtml) {\n  return `<html><head><meta charset=\"utf-8\"></head><body style=\"margin:0; padding:0; background-color:#FAF6EF;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FAF6EF;\">\n<tr><td align=\"center\" style=\"padding: 40px 16px;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:560px; background-color:#ffffff; border-radius:8px; overflow:hidden; border:1px solid #E3D9C6;\">\n<tr><td style=\"background-color:#241F1A; padding:28px 32px;\">\n<span style=\"font-family: Georgia, &quot;Times New Roman&quot;, serif; font-size:22px; color:#FAF6EF; font-weight:bold;\">SOPBot<span style=\"color:#E2934F;\">.</span></span>\n</td></tr>\n<tr><td style=\"padding:36px 32px 8px;\">\n<h1 style=\"margin:0; font-family: Georgia, &quot;Times New Roman&quot;, serif; font-size:22px; font-weight:600; color:#241F1A;\">${title}</h1>\n</td></tr>\n<tr><td style=\"padding:16px 32px 32px; font-family: Arial, Helvetica, sans-serif; font-size:15px; line-height:1.6; color:#5C5348;\">\n${bodyHtml}\n</td></tr>\n<tr><td style=\"padding:8px 32px 32px; font-family: Arial, Helvetica, sans-serif; font-size:12px; color:#9B9184; border-top:1px solid #E3D9C6;\">\n<p style=\"margin:20px 0 0;\">SOPBot by DadaAI</p>\n</td></tr>\n</table>\n</td></tr>\n</table>\n</body></html>`;\n}\n\nfunction field(label, value) {\n  return `<p style=\"margin:0 0 4px; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; color:#C1602A; font-weight:bold;\">${label}</p><p style=\"margin:0 0 16px; font-size:15px; color:#241F1A; font-weight:600;\">${value}</p>`;\n}\n\nfunction button(url, label) {\n  return `<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\"><tr><td style=\"background-color:#C1602A; border-radius:4px;\"><a href=\"${url}\" style=\"display:inline-block; padding:12px 28px; font-family: Arial, Helvetica, sans-serif; font-size:14px; font-weight:600; color:#FAF6EF; text-decoration:none;\">${label}</a></td></tr></table>`;\n}\n\nfunction esc(v) {\n  return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\n}\n\n\nconst employee_name = esc($('8. Parse Claude JSON').item.json.employee_name);\nconst process_name = esc($('8b. Validate Extraction Quality').item.json.process_name);\nconst docUrl = 'https://docs.google.com/document/d/' + $('16a. Copy Template Doc').item.json.id + '/edit';\n\nconst body = `<p style=\"margin:0 0 16px;\">Hi ${employee_name},</p>` +\n  `<p style=\"margin:0 0 16px;\">Thanks for walking through your process on the call. Here's the SOP that was generated from it.</p>` +\n  `<div style=\"margin:20px 0;\">` + button(docUrl, 'View your SOP') + `</div>` +\n  `<p style=\"margin:16px 0 0; font-size:14px; color:#9B9184;\">You can also find it anytime in your team's SOPBot dashboard.</p>`;\n\nreturn [{ json: {\n  subject: 'Your SOP is ready: ' + $('8b. Validate Extraction Quality').item.json.process_name,\n  html: wrap('Your SOP is ready', body)\n} }];\n"
+          },
+          "id": "build-employee-email-html",
+          "name": "12d-html. Build Employee Email HTML",
+          "type": "n8n-nodes-base.code",
+          "typeVersion": 2,
+          "position": [
+            3656,
+            -360
+          ]
+        },
+        {
+          "parameters": {
+            "jsCode": "\nfunction wrap(title, bodyHtml) {\n  return `<html><head><meta charset=\"utf-8\"></head><body style=\"margin:0; padding:0; background-color:#FAF6EF;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FAF6EF;\">\n<tr><td align=\"center\" style=\"padding: 40px 16px;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:560px; background-color:#ffffff; border-radius:8px; overflow:hidden; border:1px solid #E3D9C6;\">\n<tr><td style=\"background-color:#241F1A; padding:28px 32px;\">\n<span style=\"font-family: Georgia, &quot;Times New Roman&quot;, serif; font-size:22px; color:#FAF6EF; font-weight:bold;\">SOPBot<span style=\"color:#E2934F;\">.</span></span>\n</td></tr>\n<tr><td style=\"padding:36px 32px 8px;\">\n<h1 style=\"margin:0; font-family: Georgia, &quot;Times New Roman&quot;, serif; font-size:22px; font-weight:600; color:#241F1A;\">${title}</h1>\n</td></tr>\n<tr><td style=\"padding:16px 32px 32px; font-family: Arial, Helvetica, sans-serif; font-size:15px; line-height:1.6; color:#5C5348;\">\n${bodyHtml}\n</td></tr>\n<tr><td style=\"padding:8px 32px 32px; font-family: Arial, Helvetica, sans-serif; font-size:12px; color:#9B9184; border-top:1px solid #E3D9C6;\">\n<p style=\"margin:20px 0 0;\">SOPBot by DadaAI</p>\n</td></tr>\n</table>\n</td></tr>\n</table>\n</body></html>`;\n}\n\nfunction field(label, value) {\n  return `<p style=\"margin:0 0 4px; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; color:#C1602A; font-weight:bold;\">${label}</p><p style=\"margin:0 0 16px; font-size:15px; color:#241F1A; font-weight:600;\">${value}</p>`;\n}\n\nfunction button(url, label) {\n  return `<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\"><tr><td style=\"background-color:#C1602A; border-radius:4px;\"><a href=\"${url}\" style=\"display:inline-block; padding:12px 28px; font-family: Arial, Helvetica, sans-serif; font-size:14px; font-weight:600; color:#FAF6EF; text-decoration:none;\">${label}</a></td></tr></table>`;\n}\n\nfunction esc(v) {\n  return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\n}\n\n\nconst company_name = esc($('8. Parse Claude JSON').item.json.company_name);\nconst employee_name = esc($('8. Parse Claude JSON').item.json.employee_name);\nconst process_name = esc($('8b. Validate Extraction Quality').item.json.process_name);\nconst docUrl = 'https://docs.google.com/document/d/' + $('16a. Copy Template Doc').item.json.id + '/edit';\n\nconst body = `<p style=\"margin:0 0 20px;\">A SOPBot call just completed.</p>` +\n  field('Company', company_name) +\n  field('Employee', employee_name) +\n  field('Process', process_name) +\n  `<div style=\"margin-top:8px;\">` + button(docUrl, 'View SOP Document') + `</div>`;\n\nreturn [{ json: {\n  subject: 'SOPBot call completed: ' + $('8b. Validate Extraction Quality').item.json.process_name,\n  html: wrap('SOPBot call completed', body)\n} }];\n"
+          },
+          "id": "build-dwayne-email-html",
+          "name": "12g-html. Build Dwayne Email HTML",
+          "type": "n8n-nodes-base.code",
+          "typeVersion": 2,
+          "position": [
+            2984,
+            -360
+          ]
+        },
+        {
+          "parameters": {
+            "method": "POST",
+            "url": "={{ 'https://docs.googleapis.com/v1/documents/' + $('16a. Copy Template Doc').item.json.id + ':batchUpdate' }}",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "googleDocsOAuth2Api",
+            "sendBody": true,
+            "specifyBody": "json",
+            "jsonBody": "={{ (function() { const extra = $('14a. Prepare Doc Fields (Matched)').item.json.extra_sections_text; if (!extra) { return JSON.stringify({ requests: [] }); } return JSON.stringify({ requests: [{ insertText: { endOfSegmentLocation: { segmentId: '' }, text: extra } }] }); })() }}",
+            "options": {}
+          },
+          "id": "append-extra-processes-matched",
+          "name": "17a2. Append Extra Processes",
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.2,
+          "position": [
+            2328,
+            -260
+          ],
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 2000,
+          "credentials": {
+            "googleDocsOAuth2Api": {
+              "id": "qrPo0SgXYZGJmTMY",
+              "name": "DadaAI Google Docs OAuth2"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "method": "POST",
+            "url": "={{ 'https://docs.googleapis.com/v1/documents/' + $('16b. Copy Template Doc (Unmatched)').item.json.id + ':batchUpdate' }}",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "googleDocsOAuth2Api",
+            "sendBody": true,
+            "specifyBody": "json",
+            "jsonBody": "={{ (function() { const extra = $('14b. Prepare Doc Fields (Unmatched)').item.json.extra_sections_text; if (!extra) { return JSON.stringify({ requests: [] }); } return JSON.stringify({ requests: [{ insertText: { endOfSegmentLocation: { segmentId: '' }, text: extra } }] }); })() }}",
+            "options": {}
+          },
+          "id": "append-extra-processes-unmatched",
+          "name": "17b2. Append Extra Processes (Unmatched)",
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.2,
+          "position": [
+            2328,
+            -68
+          ],
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 2000,
+          "credentials": {
+            "googleDocsOAuth2Api": {
+              "id": "qrPo0SgXYZGJmTMY",
+              "name": "DadaAI Google Docs OAuth2"
+            }
+          }
         }
       ],
       "connections": {
@@ -3283,7 +3569,7 @@
           "main": [
             [
               {
-                "node": "18a. Patch SOP Doc URL",
+                "node": "17a2. Append Extra Processes",
                 "type": "main",
                 "index": 0
               }
@@ -3316,7 +3602,7 @@
           "main": [
             [
               {
-                "node": "18b. Patch SOP Doc URL (Unmatched)",
+                "node": "17b2. Append Extra Processes (Unmatched)",
                 "type": "main",
                 "index": 0
               }
@@ -3338,7 +3624,7 @@
           "main": [
             [
               {
-                "node": "12b. Ops Alert (GHL)",
+                "node": "12b-html. Build Ops Alert HTML",
                 "type": "main",
                 "index": 0
               }
@@ -3361,7 +3647,7 @@
           "main": [
             [
               {
-                "node": "12d. Employee Email (GHL)",
+                "node": "12d-html. Build Employee Email HTML",
                 "type": "main",
                 "index": 0
               }
@@ -3399,7 +3685,7 @@
           "main": [
             [
               {
-                "node": "12g. Dwayne Notification (GHL)",
+                "node": "12g-html. Build Dwayne Email HTML",
                 "type": "main",
                 "index": 0
               }
@@ -3443,7 +3729,7 @@
           "main": [
             [
               {
-                "node": "12a. Owner Email (GHL)",
+                "node": "12a-html. Build Owner Email HTML",
                 "type": "main",
                 "index": 0
               }
@@ -3511,6 +3797,72 @@
               }
             ]
           ]
+        },
+        "12a-html. Build Owner Email HTML": {
+          "main": [
+            [
+              {
+                "node": "12a. Owner Email (GHL)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "12b-html. Build Ops Alert HTML": {
+          "main": [
+            [
+              {
+                "node": "12b. Ops Alert (GHL)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "12d-html. Build Employee Email HTML": {
+          "main": [
+            [
+              {
+                "node": "12d. Employee Email (GHL)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "12g-html. Build Dwayne Email HTML": {
+          "main": [
+            [
+              {
+                "node": "12g. Dwayne Notification (GHL)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "17a2. Append Extra Processes": {
+          "main": [
+            [
+              {
+                "node": "18a. Patch SOP Doc URL",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "17b2. Append Extra Processes (Unmatched)": {
+          "main": [
+            [
+              {
+                "node": "18b. Patch SOP Doc URL (Unmatched)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
         }
       },
       "nodeGroups": [],
@@ -3520,18 +3872,18 @@
       "autosaved": false,
       "workflowPublishHistory": [
         {
-          "createdAt": "2026-09-22T11:54:55.596Z",
-          "id": 167,
+          "createdAt": "2026-09-23T09:18:44.769Z",
+          "id": 177,
           "workflowId": "fFboHgba81r265CZ",
-          "versionId": "93d8f2f3-4571-42ef-bf77-92027cd37ea7",
+          "versionId": "d77f6be9-ba98-4f20-8990-72d7a6046aec",
           "event": "deactivated",
           "userId": "659411d0-00f4-4312-ba4e-31648993ba9d"
         },
         {
-          "createdAt": "2026-09-22T11:54:55.672Z",
-          "id": 168,
+          "createdAt": "2026-09-23T09:18:44.853Z",
+          "id": 178,
           "workflowId": "fFboHgba81r265CZ",
-          "versionId": "93d8f2f3-4571-42ef-bf77-92027cd37ea7",
+          "versionId": "d77f6be9-ba98-4f20-8990-72d7a6046aec",
           "event": "activated",
           "userId": "659411d0-00f4-4312-ba4e-31648993ba9d"
         }
