@@ -3,7 +3,7 @@
 Runs run_analysis()/build_pdf() on a daemon thread instead of blocking the
 Streamlit script run. Streamlit's single WebSocket connection has proven
 unreliable held open across the full 1-3 minute analysis (repeated silent
-disconnects observed in production, root cause undetermined — see
+disconnects observed in production, root cause undetermined - see
 workflowiq/README.md). Running the work in a background thread and polling
 its status via short reruns avoids depending on one long-lived connection.
 """

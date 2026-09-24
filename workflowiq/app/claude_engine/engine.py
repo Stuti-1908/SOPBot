@@ -2,6 +2,7 @@
 from __future__ import annotations
 import json
 import os
+from concurrent.futures import ThreadPoolExecutor
 import anthropic
 
 from app.schemas import (
@@ -101,22 +102,38 @@ def run_cross_process(labeled_sops: list[dict]) -> CrossProcessResult:
     return CrossProcessResult.model_validate(data)
 
 
-def run_analysis(sops: list[SopInput]) -> RunResult:
-    """Full pipeline: 4 tasks per SOP, then optional cross-process."""
-    sop_results: list[SingleSopResult] = []
+def _run_single_sop(sop: SopInput) -> SingleSopResult:
+    """One SOP's 4-task pipeline. Task1 must finish first (task2/3/4 all
+    depend on its output), but task2 (automation) and task3 (flowchart)
+    only depend on task1, not on each other, so they run concurrently -
+    task4 (summary) needs task2's result too, so it waits for both."""
+    redesign = run_task1_redesign(sop.text)
 
-    for sop in sops:
-        redesign = run_task1_redesign(sop.text)
-        automation = run_task2_automation(sop.text, redesign)
-        flowchart = run_task3_flowchart(redesign)
-        summary = run_task4_summary(redesign, automation)
-        sop_results.append(SingleSopResult(
-            sop_input=sop,
-            redesign=redesign,
-            automation_map=automation,
-            flowchart=flowchart,
-            executive_summary=summary,
-        ))
+    with ThreadPoolExecutor(max_workers=2) as inner:
+        automation_future = inner.submit(run_task2_automation, sop.text, redesign)
+        flowchart_future = inner.submit(run_task3_flowchart, redesign)
+        automation = automation_future.result()
+        flowchart = flowchart_future.result()
+
+    summary = run_task4_summary(redesign, automation)
+
+    return SingleSopResult(
+        sop_input=sop,
+        redesign=redesign,
+        automation_map=automation,
+        flowchart=flowchart,
+        executive_summary=summary,
+    )
+
+
+def run_analysis(sops: list[SopInput]) -> RunResult:
+    """Full pipeline: 4 tasks per SOP (run_task2/3 in parallel within each
+    SOP), then optional cross-process. Every SOP in the batch is fully
+    independent of every other, so they're also run concurrently rather
+    than one after another - previously a 16-30-SOP report ran up to 30
+    sequential 4-call pipelines, which is what made large reports slow."""
+    with ThreadPoolExecutor(max_workers=min(len(sops), 8)) as outer:
+        sop_results = list(outer.map(_run_single_sop, sops))
 
     cross = None
     if len(sops) > 1:
