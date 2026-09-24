@@ -1,0 +1,618 @@
+[
+  {
+    "updatedAt": "2026-09-24T10:22:50.260Z",
+    "createdAt": "2026-09-20T11:17:05.103Z",
+    "id": "VcD63m1v4qazKUnd",
+    "name": "WorkflowIQ Order Notification",
+    "description": null,
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "workflowiq-order",
+          "authentication": "headerAuth",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "wiq-webhook-trigger",
+        "name": "1. Webhook Trigger",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          -400,
+          0
+        ],
+        "webhookId": "workflowiq-order",
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "MBylnp4m2h0gDuMe",
+            "name": "WorkflowIQ Order Webhook Secret"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ JSON.stringify({ status: \"received\" }) }}",
+          "options": {}
+        },
+        "id": "wiq-respond",
+        "name": "2. Respond Immediately",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.1,
+        "position": [
+          -160,
+          -80
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://services.leadconnectorhq.com/contacts/upsert",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "httpHeaderAuth",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Version",
+                "value": "2021-07-28"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ locationId: \"HlI90j86nBEuhp9Oovf9\", email: \"dwayne@digital-dada.com\", name: \"Dwayne\", source: \"WorkflowIQ order notification\" }) }}\n",
+          "options": {}
+        },
+        "id": "wiq-upsert-dwayne",
+        "name": "3. Upsert Dwayne Contact (GHL)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          -160,
+          80
+        ],
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "XwAF3EozOcKKFzjq",
+            "name": "DadaAI GHL"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://services.leadconnectorhq.com/conversations/messages",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "httpHeaderAuth",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Version",
+                "value": "2021-07-28"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ type: \"Email\", contactId: $json.contact.id, subject: $('3b. Build Notification HTML').item.json.subject, html: $('3b. Build Notification HTML').item.json.html }) }}",
+          "options": {}
+        },
+        "id": "wiq-notify-dwayne",
+        "name": "4. Notify Dwayne (GHL Email)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          80,
+          80
+        ],
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "XwAF3EozOcKKFzjq",
+            "name": "DadaAI GHL"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "\nfunction wrap(title, bodyHtml) {\n  return `<html><head><meta charset=\"utf-8\"></head><body style=\"margin:0; padding:0; background-color:#FAF6EF;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FAF6EF;\">\n<tr><td align=\"center\" style=\"padding: 40px 16px;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:560px; background-color:#ffffff; border-radius:8px; overflow:hidden; border:1px solid #E3D9C6;\">\n<tr><td style=\"background-color:#241F1A; padding:28px 32px;\">\n<span style=\"font-family: Georgia, &quot;Times New Roman&quot;, serif; font-size:22px; color:#FAF6EF; font-weight:bold;\">WorkflowIQ<span style=\"color:#E2934F;\">.</span></span>\n</td></tr>\n<tr><td style=\"padding:36px 32px 8px;\">\n<h1 style=\"margin:0; font-family: Georgia, &quot;Times New Roman&quot;, serif; font-size:22px; font-weight:600; color:#241F1A;\">${title}</h1>\n</td></tr>\n<tr><td style=\"padding:16px 32px 32px; font-family: Arial, Helvetica, sans-serif; font-size:15px; line-height:1.6; color:#5C5348;\">\n${bodyHtml}\n</td></tr>\n<tr><td style=\"padding:8px 32px 32px; font-family: Arial, Helvetica, sans-serif; font-size:12px; color:#9B9184; border-top:1px solid #E3D9C6;\">\n<p style=\"margin:20px 0 0;\">WorkflowIQ by DadaAI</p>\n</td></tr>\n</table>\n</td></tr>\n</table>\n</body></html>`;\n}\n\nfunction field(label, value) {\n  return `<p style=\"margin:0 0 4px; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; color:#C1602A; font-weight:bold;\">${label}</p><p style=\"margin:0 0 16px; font-size:15px; color:#241F1A; font-weight:600;\">${value}</p>`;\n}\n\nfunction button(url, label) {\n  return `<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\"><tr><td style=\"background-color:#C1602A; border-radius:4px;\"><a href=\"${url}\" style=\"display:inline-block; padding:12px 28px; font-family: Arial, Helvetica, sans-serif; font-size:14px; font-weight:600; color:#FAF6EF; text-decoration:none;\">${label}</a></td></tr></table>`;\n}\n\nfunction esc(v) {\n  return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\n}\n\n\nconst body = $('1. Webhook Trigger').item.json.body;\nconst productName = esc(body.product_name);\nconst companyName = esc(body.company_name || 'Not provided');\nconst buyerEmail = esc(body.buyer_email);\nconst paymentId = esc(body.payment_id);\nconst toolUrl = 'https://dada-wiq.167.233.94.171.nip.io';\n// n8n Code nodes on this instance block $env access - confirmed via a\n// real execution error, not assumed. This value is intentionally\n// hardcoded rather than read from env. If STREAMLIT_APP_PASSWORD ever\n// changes (see infra/.env), this line must be updated to match.\nconst toolPassword = '785q1JTVLQsSrJYMBKPP';\n\nconst content = `<p style=\"margin:0 0 20px;\">A new WorkflowIQ order needs to be run.</p>` +\n  field('Product', productName) +\n  field('Company', companyName) +\n  field('Buyer email', buyerEmail) +\n  field('Payment ID', paymentId) +\n  `<div style=\"margin:20px 0;\">` + button(toolUrl, 'Open WorkflowIQ tool') + `</div>` +\n  `<p style=\"margin:16px 0 4px; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; color:#C1602A; font-weight:bold;\">Tool password</p>` +\n  `<p style=\"margin:0 0 16px; font-size:15px; color:#241F1A; font-weight:600; font-family: 'Courier New', monospace;\">${toolPassword}</p>` +\n  `<p style=\"margin:16px 0 0; font-size:14px; color:#9B9184;\">Run the analysis in the tool, then it will automatically email the customer their report once marked complete.</p>`;\n\nreturn [{ json: {\n  subject: 'New WorkflowIQ order: ' + productName,\n  html: wrap('New WorkflowIQ order', content)\n} }];\n"
+        },
+        "id": "wiq-build-notification-html",
+        "name": "3b. Build Notification HTML",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -220,
+          220
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://services.leadconnectorhq.com/contacts/upsert",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "httpHeaderAuth",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Version",
+                "value": "2021-07-28"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ locationId: \"HlI90j86nBEuhp9Oovf9\", email: \"sng19.work@gmail.com\", name: \"Stuti\", source: \"WorkflowIQ order notification\" }) }}",
+          "options": {}
+        },
+        "id": "wiq-upsert-stuti",
+        "name": "3c. Upsert Stuti Contact (GHL)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          -160,
+          360
+        ],
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "XwAF3EozOcKKFzjq",
+            "name": "DadaAI GHL"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://services.leadconnectorhq.com/conversations/messages",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "httpHeaderAuth",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Version",
+                "value": "2021-07-28"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ type: \"Email\", contactId: $('3c. Upsert Stuti Contact (GHL)').item.json.contact.id, subject: $('3b. Build Notification HTML').item.json.subject, html: $('3b. Build Notification HTML').item.json.html }) }}",
+          "options": {}
+        },
+        "id": "wiq-notify-stuti",
+        "name": "4b. Notify Stuti (GHL Email)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          80,
+          360
+        ],
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "XwAF3EozOcKKFzjq",
+            "name": "DadaAI GHL"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "1. Webhook Trigger": {
+        "main": [
+          [
+            {
+              "node": "2. Respond Immediately",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "3b. Build Notification HTML",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "3. Upsert Dwayne Contact (GHL)": {
+        "main": [
+          [
+            {
+              "node": "4. Notify Dwayne (GHL Email)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "3b. Build Notification HTML": {
+        "main": [
+          [
+            {
+              "node": "3. Upsert Dwayne Contact (GHL)",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "3c. Upsert Stuti Contact (GHL)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "3c. Upsert Stuti Contact (GHL)": {
+        "main": [
+          [
+            {
+              "node": "4b. Notify Stuti (GHL Email)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1",
+      "errorWorkflow": "FrsqWitM0NmN5gqQ"
+    },
+    "staticData": null,
+    "meta": null,
+    "nodeGroups": [],
+    "pinData": null,
+    "versionId": "9d5662f5-6f11-4f3b-b5d3-f4cf95e4396c",
+    "activeVersionId": "9d5662f5-6f11-4f3b-b5d3-f4cf95e4396c",
+    "versionCounter": 6,
+    "triggerCount": 1,
+    "sourceWorkflowId": null,
+    "shared": [
+      {
+        "updatedAt": "2026-09-20T11:17:05.103Z",
+        "createdAt": "2026-09-20T11:17:05.103Z",
+        "role": "workflow:owner",
+        "workflowId": "VcD63m1v4qazKUnd",
+        "projectId": "G4YPNOUBb8qVYD8F",
+        "project": {
+          "updatedAt": "2026-09-17T10:29:04.009Z",
+          "createdAt": "2026-07-01T14:33:21.712Z",
+          "id": "G4YPNOUBb8qVYD8F",
+          "name": "Stuti Gohil <sng19.work@gmail.com>",
+          "type": "personal",
+          "icon": null,
+          "description": null,
+          "customTelemetryTags": [],
+          "creatorId": "659411d0-00f4-4312-ba4e-31648993ba9d"
+        }
+      }
+    ],
+    "tags": [],
+    "activeVersion": {
+      "updatedAt": "2026-09-24T10:22:50.264Z",
+      "createdAt": "2026-09-24T10:22:50.264Z",
+      "versionId": "9d5662f5-6f11-4f3b-b5d3-f4cf95e4396c",
+      "workflowId": "VcD63m1v4qazKUnd",
+      "nodes": [
+        {
+          "parameters": {
+            "httpMethod": "POST",
+            "path": "workflowiq-order",
+            "authentication": "headerAuth",
+            "responseMode": "responseNode",
+            "options": {}
+          },
+          "id": "wiq-webhook-trigger",
+          "name": "1. Webhook Trigger",
+          "type": "n8n-nodes-base.webhook",
+          "typeVersion": 2,
+          "position": [
+            -400,
+            0
+          ],
+          "webhookId": "workflowiq-order",
+          "credentials": {
+            "httpHeaderAuth": {
+              "id": "MBylnp4m2h0gDuMe",
+              "name": "WorkflowIQ Order Webhook Secret"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "respondWith": "json",
+            "responseBody": "={{ JSON.stringify({ status: \"received\" }) }}",
+            "options": {}
+          },
+          "id": "wiq-respond",
+          "name": "2. Respond Immediately",
+          "type": "n8n-nodes-base.respondToWebhook",
+          "typeVersion": 1.1,
+          "position": [
+            -160,
+            -80
+          ]
+        },
+        {
+          "parameters": {
+            "method": "POST",
+            "url": "https://services.leadconnectorhq.com/contacts/upsert",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "httpHeaderAuth",
+            "sendHeaders": true,
+            "headerParameters": {
+              "parameters": [
+                {
+                  "name": "Version",
+                  "value": "2021-07-28"
+                },
+                {
+                  "name": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            "sendBody": true,
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({ locationId: \"HlI90j86nBEuhp9Oovf9\", email: \"dwayne@digital-dada.com\", name: \"Dwayne\", source: \"WorkflowIQ order notification\" }) }}\n",
+            "options": {}
+          },
+          "id": "wiq-upsert-dwayne",
+          "name": "3. Upsert Dwayne Contact (GHL)",
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.2,
+          "position": [
+            -160,
+            80
+          ],
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 2000,
+          "credentials": {
+            "httpHeaderAuth": {
+              "id": "XwAF3EozOcKKFzjq",
+              "name": "DadaAI GHL"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "method": "POST",
+            "url": "https://services.leadconnectorhq.com/conversations/messages",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "httpHeaderAuth",
+            "sendHeaders": true,
+            "headerParameters": {
+              "parameters": [
+                {
+                  "name": "Version",
+                  "value": "2021-07-28"
+                },
+                {
+                  "name": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            "sendBody": true,
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({ type: \"Email\", contactId: $json.contact.id, subject: $('3b. Build Notification HTML').item.json.subject, html: $('3b. Build Notification HTML').item.json.html }) }}",
+            "options": {}
+          },
+          "id": "wiq-notify-dwayne",
+          "name": "4. Notify Dwayne (GHL Email)",
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.2,
+          "position": [
+            80,
+            80
+          ],
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 2000,
+          "credentials": {
+            "httpHeaderAuth": {
+              "id": "XwAF3EozOcKKFzjq",
+              "name": "DadaAI GHL"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "jsCode": "\nfunction wrap(title, bodyHtml) {\n  return `<html><head><meta charset=\"utf-8\"></head><body style=\"margin:0; padding:0; background-color:#FAF6EF;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FAF6EF;\">\n<tr><td align=\"center\" style=\"padding: 40px 16px;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:560px; background-color:#ffffff; border-radius:8px; overflow:hidden; border:1px solid #E3D9C6;\">\n<tr><td style=\"background-color:#241F1A; padding:28px 32px;\">\n<span style=\"font-family: Georgia, &quot;Times New Roman&quot;, serif; font-size:22px; color:#FAF6EF; font-weight:bold;\">WorkflowIQ<span style=\"color:#E2934F;\">.</span></span>\n</td></tr>\n<tr><td style=\"padding:36px 32px 8px;\">\n<h1 style=\"margin:0; font-family: Georgia, &quot;Times New Roman&quot;, serif; font-size:22px; font-weight:600; color:#241F1A;\">${title}</h1>\n</td></tr>\n<tr><td style=\"padding:16px 32px 32px; font-family: Arial, Helvetica, sans-serif; font-size:15px; line-height:1.6; color:#5C5348;\">\n${bodyHtml}\n</td></tr>\n<tr><td style=\"padding:8px 32px 32px; font-family: Arial, Helvetica, sans-serif; font-size:12px; color:#9B9184; border-top:1px solid #E3D9C6;\">\n<p style=\"margin:20px 0 0;\">WorkflowIQ by DadaAI</p>\n</td></tr>\n</table>\n</td></tr>\n</table>\n</body></html>`;\n}\n\nfunction field(label, value) {\n  return `<p style=\"margin:0 0 4px; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; color:#C1602A; font-weight:bold;\">${label}</p><p style=\"margin:0 0 16px; font-size:15px; color:#241F1A; font-weight:600;\">${value}</p>`;\n}\n\nfunction button(url, label) {\n  return `<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\"><tr><td style=\"background-color:#C1602A; border-radius:4px;\"><a href=\"${url}\" style=\"display:inline-block; padding:12px 28px; font-family: Arial, Helvetica, sans-serif; font-size:14px; font-weight:600; color:#FAF6EF; text-decoration:none;\">${label}</a></td></tr></table>`;\n}\n\nfunction esc(v) {\n  return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\n}\n\n\nconst body = $('1. Webhook Trigger').item.json.body;\nconst productName = esc(body.product_name);\nconst companyName = esc(body.company_name || 'Not provided');\nconst buyerEmail = esc(body.buyer_email);\nconst paymentId = esc(body.payment_id);\nconst toolUrl = 'https://dada-wiq.167.233.94.171.nip.io';\n// n8n Code nodes on this instance block $env access - confirmed via a\n// real execution error, not assumed. This value is intentionally\n// hardcoded rather than read from env. If STREAMLIT_APP_PASSWORD ever\n// changes (see infra/.env), this line must be updated to match.\nconst toolPassword = '785q1JTVLQsSrJYMBKPP';\n\nconst content = `<p style=\"margin:0 0 20px;\">A new WorkflowIQ order needs to be run.</p>` +\n  field('Product', productName) +\n  field('Company', companyName) +\n  field('Buyer email', buyerEmail) +\n  field('Payment ID', paymentId) +\n  `<div style=\"margin:20px 0;\">` + button(toolUrl, 'Open WorkflowIQ tool') + `</div>` +\n  `<p style=\"margin:16px 0 4px; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; color:#C1602A; font-weight:bold;\">Tool password</p>` +\n  `<p style=\"margin:0 0 16px; font-size:15px; color:#241F1A; font-weight:600; font-family: 'Courier New', monospace;\">${toolPassword}</p>` +\n  `<p style=\"margin:16px 0 0; font-size:14px; color:#9B9184;\">Run the analysis in the tool, then it will automatically email the customer their report once marked complete.</p>`;\n\nreturn [{ json: {\n  subject: 'New WorkflowIQ order: ' + productName,\n  html: wrap('New WorkflowIQ order', content)\n} }];\n"
+          },
+          "id": "wiq-build-notification-html",
+          "name": "3b. Build Notification HTML",
+          "type": "n8n-nodes-base.code",
+          "typeVersion": 2,
+          "position": [
+            -220,
+            220
+          ]
+        },
+        {
+          "parameters": {
+            "method": "POST",
+            "url": "https://services.leadconnectorhq.com/contacts/upsert",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "httpHeaderAuth",
+            "sendHeaders": true,
+            "headerParameters": {
+              "parameters": [
+                {
+                  "name": "Version",
+                  "value": "2021-07-28"
+                },
+                {
+                  "name": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            "sendBody": true,
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({ locationId: \"HlI90j86nBEuhp9Oovf9\", email: \"sng19.work@gmail.com\", name: \"Stuti\", source: \"WorkflowIQ order notification\" }) }}",
+            "options": {}
+          },
+          "id": "wiq-upsert-stuti",
+          "name": "3c. Upsert Stuti Contact (GHL)",
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.2,
+          "position": [
+            -160,
+            360
+          ],
+          "credentials": {
+            "httpHeaderAuth": {
+              "id": "XwAF3EozOcKKFzjq",
+              "name": "DadaAI GHL"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "method": "POST",
+            "url": "https://services.leadconnectorhq.com/conversations/messages",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "httpHeaderAuth",
+            "sendHeaders": true,
+            "headerParameters": {
+              "parameters": [
+                {
+                  "name": "Version",
+                  "value": "2021-07-28"
+                },
+                {
+                  "name": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            "sendBody": true,
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({ type: \"Email\", contactId: $('3c. Upsert Stuti Contact (GHL)').item.json.contact.id, subject: $('3b. Build Notification HTML').item.json.subject, html: $('3b. Build Notification HTML').item.json.html }) }}",
+            "options": {}
+          },
+          "id": "wiq-notify-stuti",
+          "name": "4b. Notify Stuti (GHL Email)",
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.2,
+          "position": [
+            80,
+            360
+          ],
+          "credentials": {
+            "httpHeaderAuth": {
+              "id": "XwAF3EozOcKKFzjq",
+              "name": "DadaAI GHL"
+            }
+          }
+        }
+      ],
+      "connections": {
+        "1. Webhook Trigger": {
+          "main": [
+            [
+              {
+                "node": "2. Respond Immediately",
+                "type": "main",
+                "index": 0
+              },
+              {
+                "node": "3b. Build Notification HTML",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "3. Upsert Dwayne Contact (GHL)": {
+          "main": [
+            [
+              {
+                "node": "4. Notify Dwayne (GHL Email)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "3b. Build Notification HTML": {
+          "main": [
+            [
+              {
+                "node": "3. Upsert Dwayne Contact (GHL)",
+                "type": "main",
+                "index": 0
+              },
+              {
+                "node": "3c. Upsert Stuti Contact (GHL)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "3c. Upsert Stuti Contact (GHL)": {
+          "main": [
+            [
+              {
+                "node": "4b. Notify Stuti (GHL Email)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "nodeGroups": [],
+      "authors": "Stuti Gohil",
+      "name": null,
+      "description": null,
+      "autosaved": false,
+      "workflowPublishHistory": [
+        {
+          "createdAt": "2026-09-24T10:22:50.412Z",
+          "id": 238,
+          "workflowId": "VcD63m1v4qazKUnd",
+          "versionId": "9d5662f5-6f11-4f3b-b5d3-f4cf95e4396c",
+          "event": "deactivated",
+          "userId": "659411d0-00f4-4312-ba4e-31648993ba9d"
+        },
+        {
+          "createdAt": "2026-09-24T10:22:50.477Z",
+          "id": 239,
+          "workflowId": "VcD63m1v4qazKUnd",
+          "versionId": "9d5662f5-6f11-4f3b-b5d3-f4cf95e4396c",
+          "event": "activated",
+          "userId": "659411d0-00f4-4312-ba4e-31648993ba9d"
+        }
+      ]
+    }
+  }
+]
