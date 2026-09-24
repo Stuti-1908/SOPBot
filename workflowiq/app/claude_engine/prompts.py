@@ -65,8 +65,15 @@ Return a JSON object with a single key "dot_source" containing the DOT string.
 The flowchart should be clear, professional, and use rankdir=TB (top to bottom,
 vertical) so it reads well on a tall printed page.
 
+Write the entire DOT source as ONE SINGLE LINE inside the JSON string value -
+do not put real line breaks inside "dot_source". Where the DOT source itself
+needs a newline (e.g. inside a multi-line label), use the two-character
+escape sequence \\n, and escape every double-quote inside the DOT source as
+\\". The result must be valid, parseable JSON - test it against that
+requirement before answering.
+
 {{
-  "dot_source": "digraph {{ ... }}"
+  "dot_source": "digraph {{ rankdir=TB; a -> b; }}"
 }}
 
 REDESIGNED PROCESS:

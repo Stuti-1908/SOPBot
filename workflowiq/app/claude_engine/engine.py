@@ -36,6 +36,43 @@ def _extract_json_object(text: str) -> str:
     raise ValueError("no balanced closing '}' found in Claude response")
 
 
+def _escape_literal_newlines_in_strings(text: str) -> str:
+    """Repairs the specific, observed failure mode where Claude returns a
+    JSON string value (e.g. TASK3_FLOWCHART's "dot_source") containing real,
+    unescaped newline characters instead of the two-character \\n escape -
+    valid-looking multi-line text to a human, invalid JSON to a parser.
+    Walks the raw text character by character, tracking whether we're
+    inside a JSON string (respecting existing backslash-escapes and nested
+    escaped quotes), and replaces any literal '\\n' found there with the
+    escape sequence. Text outside string values (structural whitespace) is
+    left untouched."""
+    out = []
+    in_string = False
+    escaped = False
+    for ch in text:
+        if in_string:
+            if escaped:
+                out.append(ch)
+                escaped = False
+            elif ch == "\\":
+                out.append(ch)
+                escaped = True
+            elif ch == '"':
+                out.append(ch)
+                in_string = False
+            elif ch == "\n":
+                out.append("\\n")
+            elif ch == "\r":
+                out.append("\\r")
+            else:
+                out.append(ch)
+        else:
+            if ch == '"':
+                in_string = True
+            out.append(ch)
+    return "".join(out)
+
+
 def _call(prompt: str, max_tokens: int = MAX_TOKENS) -> dict:
     """Single Claude call; returns parsed JSON dict.
 
@@ -43,6 +80,11 @@ def _call(prompt: str, max_tokens: int = MAX_TOKENS) -> dict:
     prose commentary (confirmed to happen on this same model/prompt style in
     SOPBot's transcript extraction). Fall back to locating the JSON object by
     brace-matching rather than trusting json.loads on the raw text alone.
+
+    Also occasionally returns a string VALUE (e.g. dot_source) containing
+    real unescaped newlines instead of \\n - confirmed via a real production
+    failure on TASK3_FLOWCHART's Graphviz output. A third fallback repairs
+    that specific case before giving up.
     """
     msg = _client.messages.create(
         model=MODEL,
@@ -61,9 +103,20 @@ def _call(prompt: str, max_tokens: int = MAX_TOKENS) -> dict:
         try:
             return json.loads(_extract_json_object(raw))
         except (ValueError, json.JSONDecodeError) as second_err:
-            raise ValueError(
-                f"Claude returned invalid JSON: {first_err} | extraction attempt: {second_err} | raw[:500]={raw[:500]!r}"
-            ) from second_err
+            # The literal-newline repair must run BEFORE brace-matching, not
+            # after: an unescaped newline inside a string is exactly what
+            # makes brace-matching itself fail ("no balanced closing '}'"),
+            # since the parser's notion of being inside/outside a string
+            # gets confused by the raw newline. Repairing first fixes the
+            # string content so brace-matching (and json.loads) can succeed.
+            try:
+                repaired_raw = _escape_literal_newlines_in_strings(raw)
+                return json.loads(_extract_json_object(repaired_raw))
+            except (ValueError, json.JSONDecodeError) as third_err:
+                raise ValueError(
+                    f"Claude returned invalid JSON: {first_err} | extraction attempt: {second_err} | "
+                    f"repair attempt: {third_err} | raw[:500]={raw[:500]!r}"
+                ) from third_err
 
 
 def run_task1_redesign(sop_text: str) -> RedesignResult:
