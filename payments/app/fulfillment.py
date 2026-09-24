@@ -64,10 +64,11 @@ def fulfill_order(payment: dict) -> None:
     log.info("Fulfilling order: %s", order)
 
     product = get_product(order["product_id"]) if order.get("product_id") else None
+    workflowiq_account = None
 
     try:
         if product and product.category == "workflowiq_report":
-            _write_workflowiq_run(order, product)
+            workflowiq_account = _write_workflowiq_run(order, product)
         else:
             account = _write_to_supabase(order)
             _notify_customer_welcome(order, account)
@@ -84,6 +85,7 @@ def fulfill_order(payment: dict) -> None:
 
     if product and product.category == "workflowiq_report":
         _notify_workflowiq_order(order, product)
+        _notify_workflowiq_order_received(order, product, workflowiq_account)
 
 
 def _write_to_supabase(order: dict) -> dict:
@@ -130,12 +132,16 @@ def _write_to_supabase(order: dict) -> dict:
         return res.data[0]
 
 
-def _write_workflowiq_run(order: dict, product) -> None:
+def _write_workflowiq_run(order: dict, product) -> dict | None:
     """Record a pending WorkflowIQ order so staff can see it needs running and
     the dashboard can show "Pending" instead of nothing. Mirrors _write_to_supabase's
     match-by-email approach, but client_id is optional here - a first-time
     WorkflowIQ buyer may not have a clients row yet (see schema migration
-    that dropped client_id's NOT NULL constraint on workflowiq_runs)."""
+    that dropped client_id's NOT NULL constraint on workflowiq_runs).
+
+    Returns the matched clients row (with dashboard_token) if one exists, so
+    the order-received email can link to a real dashboard - or None for a
+    first-time WorkflowIQ-only buyer with no account yet."""
     if not (SUPABASE_URL and SUPABASE_SERVICE_KEY):
         raise RuntimeError("Supabase env vars not fully configured")
 
@@ -144,12 +150,13 @@ def _write_workflowiq_run(order: dict, product) -> None:
 
     existing = (
         client.table("clients")
-        .select("id")
+        .select("id, dashboard_token")
         .eq("contact_email", order["buyer_email"])
         .limit(1)
         .execute()
     )
-    client_id = existing.data[0]["id"] if existing.data else None
+    account = existing.data[0] if existing.data else None
+    client_id = account["id"] if account else None
 
     client.table("workflowiq_runs").insert({
         "client_id": client_id,
@@ -162,6 +169,8 @@ def _write_workflowiq_run(order: dict, product) -> None:
         "contact_email": order["buyer_email"],
         "payment_id": order["payment_id"],
     }).execute()
+
+    return account
 
 
 _TEMPLATES_DIR = Path(__file__).parent / "email_templates"
@@ -205,13 +214,80 @@ def _notify_customer_welcome(order: dict, account: dict) -> None:
             json={
                 "buyer_email": order["buyer_email"],
                 "from_email": WELCOME_EMAIL_FROM,
-                "subject": "Welcome to SOPBot — your dashboard is ready",
+                "subject": "Welcome to SOPBot - your dashboard is ready",
                 "html": html,
             },
             timeout=10,
         )
     except Exception as e:
         log.error("Customer welcome email failed for %s: %s", order["payment_id"], e)
+
+
+def _render_order_received_email_html(order: dict, product, account: dict | None) -> str:
+    """Renders the WorkflowIQ order-received email. Sets a 24-48 hour
+    delivery expectation immediately at purchase time, since previously the
+    customer's first email at all was the finished report itself - no
+    acknowledgement that the order was received, which reads as a stalled
+    or lost purchase if the operator takes a few hours to run it.
+
+    The dashboard link/sentence is only included if this buyer already has
+    a clients account (dashboard_token) - a first-time WorkflowIQ-only buyer
+    has nothing to see on the dashboard today, so promising one would be a
+    broken link in the email."""
+    template = (_TEMPLATES_DIR / "order_received_email.html").read_text(encoding="utf-8")
+
+    if account and account.get("dashboard_token"):
+        dashboard_url = f"https://dashboard.thesopbot.com/?token={account['dashboard_token']}"
+        dashboard_sentence = " You can also check on the status anytime from your dashboard."
+        dashboard_button_block = (
+            '<tr><td align="center" style="padding:16px 32px 8px;">'
+            '<table role="presentation" cellpadding="0" cellspacing="0">'
+            '<tr><td style="background-color:#C1602A; border-radius:4px;">'
+            f'<a href="{dashboard_url}" style="display:inline-block; padding:14px 32px; '
+            'font-family: Arial, Helvetica, sans-serif; font-size:15px; font-weight:600; '
+            'color:#FAF6EF; text-decoration:none;">Check your dashboard</a>'
+            "</td></tr></table></td></tr>"
+        )
+    else:
+        dashboard_sentence = ""
+        dashboard_button_block = ""
+
+    return template.format(
+        report_type=product.name,
+        dashboard_sentence=dashboard_sentence,
+        dashboard_button_block=dashboard_button_block,
+    )
+
+
+def _notify_workflowiq_order_received(order: dict, product, account: dict | None) -> None:
+    """Sends the customer an acknowledgement email right after purchase,
+    setting a 24-48 hour delivery expectation - closes the gap where a
+    WorkflowIQ buyer previously got no confirmation at all until the
+    finished report arrived, which could look like a stalled purchase.
+
+    Best-effort: failure here must never block fulfillment - the order is
+    already recorded in Supabase by _write_workflowiq_run regardless."""
+    if not CUSTOMER_WELCOME_WEBHOOK_URL:
+        log.warning("CUSTOMER_WELCOME_WEBHOOK_URL not configured - skipping order-received email for %s", order["payment_id"])
+        return
+
+    html = _render_order_received_email_html(order, product, account)
+
+    import requests
+    try:
+        requests.post(
+            CUSTOMER_WELCOME_WEBHOOK_URL,
+            headers={"x-webhook-secret": CUSTOMER_WELCOME_WEBHOOK_SECRET, "Content-Type": "application/json"},
+            json={
+                "buyer_email": order["buyer_email"],
+                "from_email": WELCOME_EMAIL_FROM,
+                "subject": "We've received your WorkflowIQ request",
+                "html": html,
+            },
+            timeout=10,
+        )
+    except Exception as e:
+        log.error("WorkflowIQ order-received email failed for %s: %s", order["payment_id"], e)
 
 
 def _notify_workflowiq_order(order: dict, product) -> None:

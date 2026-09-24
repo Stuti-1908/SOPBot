@@ -32,6 +32,7 @@ class PendingOrder:
     contact_email: str
     report_type: str
     payment_id: str
+    client_name: str | None = None
 
 
 def _supabase_client():
@@ -52,7 +53,28 @@ def list_pending_orders() -> list[PendingOrder]:
         .order("run_timestamp", desc=True)
         .execute()
     )
-    return [PendingOrder(**r) for r in res.data]
+    orders = [PendingOrder(**r) for r in res.data]
+
+    # Best-effort: look up each order's company name (via their clients row,
+    # matched by email - same join _write_workflowiq_run already does) so the
+    # UI can auto-find their Drive SOPs. Missing/failed lookups just leave
+    # client_name as None - the UI falls back to manual entry in that case.
+    if orders:
+        emails = [o.contact_email for o in orders]
+        try:
+            clients_res = (
+                client.table("clients")
+                .select("contact_email, client_name")
+                .in_("contact_email", emails)
+                .execute()
+            )
+            name_by_email = {r["contact_email"]: r.get("client_name") for r in clients_res.data}
+            for o in orders:
+                o.client_name = name_by_email.get(o.contact_email) or None
+        except Exception:
+            pass
+
+    return orders
 
 
 def mark_order_complete(

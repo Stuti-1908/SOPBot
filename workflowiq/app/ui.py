@@ -2,7 +2,7 @@
 import os
 import streamlit as st
 
-from app.google_drive.reader import fetch_sop_from_drive
+from app.google_drive.reader import fetch_sop_from_drive, find_customer_sop_docs
 from app.job_runner import start_job
 from app.airtable_logger.logger import log_run
 from app.order_delivery import list_pending_orders, mark_order_complete, email_report_to_customer
@@ -35,6 +35,7 @@ def render_ui() -> None:
         urls_raw = st.text_area(
             f"Google Doc URLs (one per line, max {max_sops})",
             height=150,
+            value=st.session_state.pop("url_prefill", ""),
             placeholder="https://docs.google.com/document/d/...",
         )
         client_name = st.text_input("Client name")
@@ -125,7 +126,52 @@ def _render_pending_orders() -> None:
     else:
         st.session_state.pop("selected_order", None)
 
+    _render_found_sops_for_selected_order()
+
     st.divider()
+
+
+def _render_found_sops_for_selected_order() -> None:
+    """When an order is selected, look up that customer's company Drive
+    folder and list every SOP found there as checkboxes - saves the operator
+    from manually hunting for and pasting Drive links (previously the one
+    fully-manual step in the purchase -> report -> delivery pipeline).
+    Falls back silently to the existing manual URL paste box if no company
+    match or no folder is found - this is a convenience, not a requirement."""
+    order = st.session_state.get("selected_order")
+    if not order:
+        return
+
+    if not order.client_name:
+        st.caption("No matching account on file for this email - paste SOP URLs manually below.")
+        return
+
+    docs = st.session_state.get(f"found_sops_{order.id}")
+    if docs is None:
+        with st.spinner(f"Looking for {order.client_name}'s SOPs in Drive…"):
+            try:
+                docs = find_customer_sop_docs(order.client_name)
+            except Exception as e:
+                st.warning(f"Couldn't search Drive for this customer's SOPs: {e}")
+                docs = []
+        st.session_state[f"found_sops_{order.id}"] = docs
+
+    if not docs:
+        st.caption(f"No SOP folder found for \"{order.client_name}\" - paste SOP URLs manually below.")
+        return
+
+    st.markdown(f"**Found {len(docs)} SOP(s) for {order.client_name}** - check which to include:")
+    selected_urls = []
+    for i, doc in enumerate(docs):
+        checked = st.checkbox(doc["name"], key=f"sop_check_{order.id}_{i}")
+        if checked:
+            selected_urls.append(doc["url"])
+    st.session_state[f"selected_sop_urls_{order.id}"] = selected_urls
+    if selected_urls:
+        st.caption(f"{len(selected_urls)} selected - click below to prefill the URL box, or paste your own.")
+        if st.button("Use selected SOPs"):
+            st.session_state["url_prefill"] = "\n".join(selected_urls)
+            st.rerun()
 
 
 def _launch(sops: list[SopInput]) -> None:
