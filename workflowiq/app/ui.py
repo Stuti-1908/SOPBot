@@ -1,4 +1,4 @@
-"""WorkflowIQ main UI — SOP input, run trigger, results display."""
+"""WorkflowIQ main UI - SOP input, run trigger, results display."""
 import os
 import streamlit as st
 
@@ -7,75 +7,79 @@ from app.job_runner import start_job
 from app.airtable_logger.logger import log_run
 from app.order_delivery import list_pending_orders, mark_order_complete, email_report_to_customer
 from app.schemas import SopInput
+from app.theme import badge
 
 
 def render_ui() -> None:
-    st.title("WorkflowIQ ⚙️")
-    st.caption("Process optimization reports powered by DadaAI")
-
-    st.divider()
-
-    # A job is in flight or finished — poll/display it instead of showing the form again.
+    # A job is in flight or finished - poll/display it instead of showing the form again.
     if "job" in st.session_state:
         _poll_and_display()
         return
 
+    st.markdown("#### 1. Who is this report for?")
     _render_pending_orders()
 
-    mode = st.radio(
-        "SOP Source",
-        ["Google Drive URL", "Paste text"],
-        horizontal=True,
-    )
+    st.markdown("#### 2. Add the SOP(s) to analyse")
+    _render_sop_input()
 
-    sops: list[SopInput] = []
 
-    if mode == "Google Drive URL":
-        max_sops = int(os.getenv("MAX_SOPS_PER_RUN", 30))
-        urls_raw = st.text_area(
-            f"Google Doc URLs (one per line, max {max_sops})",
-            height=150,
-            value=st.session_state.pop("url_prefill", ""),
-            placeholder="https://docs.google.com/document/d/...",
+def _render_sop_input() -> None:
+    with st.container(border=True):
+        mode = st.radio(
+            "SOP source",
+            ["Google Drive link", "Paste text"],
+            horizontal=True,
+            label_visibility="collapsed",
         )
-        client_name = st.text_input("Client name")
-        if st.button("Fetch & Analyse", type="primary"):
-            urls = [u.strip() for u in urls_raw.splitlines() if u.strip()]
-            if not urls:
-                st.error("Paste at least one Google Doc URL.")
-                return
-            if len(urls) > max_sops:
-                st.error(f"Maximum {max_sops} SOPs per run.")
-                return
-            with st.spinner("Fetching SOPs from Drive…"):
-                for url in urls:
-                    try:
-                        text = fetch_sop_from_drive(url)
-                        sops.append(SopInput(source_url=url, text=text, client_name=client_name))
-                    except Exception as e:
-                        st.error(f"Failed to fetch {url}: {e}")
-                        return
-            _launch(sops)
 
-    else:
-        sop_text = st.text_area("Paste SOP text", height=300)
-        client_name = st.text_input("Client name")
-        process_name = st.text_input("Process name")
-        if st.button("Analyse", type="primary"):
-            if not sop_text.strip():
-                st.error("Paste SOP text first.")
-                return
-            word_count = len(sop_text.split())
-            min_w = int(os.getenv("MIN_SOP_WORDS", 100))
-            max_w = int(os.getenv("MAX_SOP_WORDS", 15000))
-            if word_count < min_w:
-                st.error(f"SOP too short ({word_count} words, minimum {min_w}).")
-                return
-            if word_count > max_w:
-                st.error(f"SOP too long ({word_count} words, maximum {max_w}).")
-                return
-            sops.append(SopInput(text=sop_text, client_name=client_name, process_name=process_name))
-            _launch(sops)
+        sops: list[SopInput] = []
+
+        if mode == "Google Drive link":
+            max_sops = int(os.getenv("MAX_SOPS_PER_RUN", 30))
+            urls_raw = st.text_area(
+                f"Google Doc links (one per line, up to {max_sops})",
+                height=130,
+                value=st.session_state.pop("url_prefill", ""),
+                placeholder="https://docs.google.com/document/d/...",
+            )
+            client_name = st.text_input("Client name")
+            if st.button("Fetch and analyse", type="primary", use_container_width=True):
+                urls = [u.strip() for u in urls_raw.splitlines() if u.strip()]
+                if not urls:
+                    st.error("Add at least one Google Doc link.")
+                    return
+                if len(urls) > max_sops:
+                    st.error(f"That's {len(urls)} links - the limit for this run is {max_sops}.")
+                    return
+                with st.spinner("Fetching SOPs from Drive..."):
+                    for url in urls:
+                        try:
+                            text = fetch_sop_from_drive(url)
+                            sops.append(SopInput(source_url=url, text=text, client_name=client_name))
+                        except Exception as e:
+                            st.error(f"Couldn't open {url}: {e}")
+                            return
+                _launch(sops)
+
+        else:
+            sop_text = st.text_area("Paste the SOP text", height=260)
+            client_name = st.text_input("Client name")
+            process_name = st.text_input("Process name")
+            if st.button("Analyse", type="primary", use_container_width=True):
+                if not sop_text.strip():
+                    st.error("Paste the SOP text first.")
+                    return
+                word_count = len(sop_text.split())
+                min_w = int(os.getenv("MIN_SOP_WORDS", 100))
+                max_w = int(os.getenv("MAX_SOP_WORDS", 15000))
+                if word_count < min_w:
+                    st.error(f"This is {word_count} words - needs at least {min_w} to analyse well.")
+                    return
+                if word_count > max_w:
+                    st.error(f"This is {word_count} words - the limit per SOP is {max_w}.")
+                    return
+                sops.append(SopInput(text=sop_text, client_name=client_name, process_name=process_name))
+                _launch(sops)
 
 
 def _deliver_to_order(job, pdf_path: str, result) -> None:
@@ -95,9 +99,9 @@ def _deliver_to_order(job, pdf_path: str, result) -> None:
             pdf_filename=os.path.basename(pdf_path),
         )
         email_report_to_customer(job.order.contact_email, pdf_path)
-        st.success(f"Order marked complete and report emailed to {job.order.contact_email}.")
+        st.success(f"Order marked complete and the report was emailed to {job.order.contact_email}.")
     except Exception as e:
-        st.error(f"Report generated, but delivery to the customer failed: {e}. Download the PDF below and send it manually.")
+        st.error(f"Report generated, but sending it to the customer failed: {e}. Download it below and send it yourself.")
     finally:
         st.session_state[f"delivered_{job.order.id}"] = True
 
@@ -112,23 +116,25 @@ def _render_pending_orders() -> None:
         st.warning(f"Couldn't load pending orders: {e}")
         return
 
-    if not orders:
-        st.caption("No pending WorkflowIQ orders.")
-        return
+    with st.container(border=True):
+        if not orders:
+            st.caption("No paid orders waiting - pick this if you're running a one-off analysis instead.")
+        else:
+            st.markdown(
+                f"{badge(f'{len(orders)} waiting', 'pending')}",
+                unsafe_allow_html=True,
+            )
 
-    st.subheader(f"Pending orders ({len(orders)})")
-    labels = ["— run without linking to an order —"] + [
-        f"{o.contact_email} · {o.report_type} · {o.payment_id}" for o in orders
-    ]
-    choice = st.selectbox("Run this analysis for:", labels, key="pending_order_choice")
-    if choice != labels[0]:
-        st.session_state["selected_order"] = orders[labels.index(choice) - 1]
-    else:
-        st.session_state.pop("selected_order", None)
+        labels = ["Just running an analysis, not tied to an order"] + [
+            f"{o.contact_email}  -  {o.report_type}" for o in orders
+        ]
+        choice = st.selectbox("Order", labels, key="pending_order_choice", label_visibility="collapsed")
+        if choice != labels[0]:
+            st.session_state["selected_order"] = orders[labels.index(choice) - 1]
+        else:
+            st.session_state.pop("selected_order", None)
 
-    _render_found_sops_for_selected_order()
-
-    st.divider()
+        _render_found_sops_for_selected_order()
 
 
 def _render_found_sops_for_selected_order() -> None:
@@ -143,12 +149,12 @@ def _render_found_sops_for_selected_order() -> None:
         return
 
     if not order.client_name:
-        st.caption("No matching account on file for this email - paste SOP URLs manually below.")
+        st.caption("No account on file for this email yet - add the SOP link(s) below.")
         return
 
     docs = st.session_state.get(f"found_sops_{order.id}")
     if docs is None:
-        with st.spinner(f"Looking for {order.client_name}'s SOPs in Drive…"):
+        with st.spinner(f"Looking for {order.client_name}'s SOPs in Drive..."):
             try:
                 docs = find_customer_sop_docs(order.client_name)
             except Exception as e:
@@ -157,10 +163,10 @@ def _render_found_sops_for_selected_order() -> None:
         st.session_state[f"found_sops_{order.id}"] = docs
 
     if not docs:
-        st.caption(f"No SOP folder found for \"{order.client_name}\" - paste SOP URLs manually below.")
+        st.caption(f"No SOP folder found for {order.client_name} - add the link(s) below.")
         return
 
-    st.markdown(f"**Found {len(docs)} SOP(s) for {order.client_name}** - check which to include:")
+    st.markdown(f"Found **{len(docs)} SOP(s)** for {order.client_name} - pick which to include:")
     selected_urls = []
     for i, doc in enumerate(docs):
         checked = st.checkbox(doc["name"], key=f"sop_check_{order.id}_{i}")
@@ -168,8 +174,7 @@ def _render_found_sops_for_selected_order() -> None:
             selected_urls.append(doc["url"])
     st.session_state[f"selected_sop_urls_{order.id}"] = selected_urls
     if selected_urls:
-        st.caption(f"{len(selected_urls)} selected - click below to prefill the URL box, or paste your own.")
-        if st.button("Use selected SOPs"):
+        if st.button(f"Use {len(selected_urls)} selected"):
             st.session_state["url_prefill"] = "\n".join(selected_urls)
             st.rerun()
 
@@ -186,7 +191,7 @@ def _poll_running_job() -> None:
     """Runs on its own 2s timer via Streamlit's native fragment auto-refresh,
     isolated from the rest of the page. This replaced a manual time.sleep() +
     st.rerun() loop that occasionally threw 'Bad message format: Tried to use
-    SessionInfo before it was initialized' — a known issue when a full-page
+    SessionInfo before it was initialized' - a known issue when a full-page
     rerun is triggered again before the previous one's session handshake has
     settled. st.fragment(run_every=...) is Streamlit's purpose-built API for
     exactly this polling pattern and only reruns the fragment, not the page."""
@@ -194,8 +199,9 @@ def _poll_running_job() -> None:
     if job.status != "running":
         st.rerun()
         return
-    st.info("Running AI analysis (this takes 1–3 minutes)… this page refreshes itself, no need to reload.")
-    st.progress(50, text="Analysing with Claude…")
+    st.markdown(badge("Running", "running"), unsafe_allow_html=True)
+    st.caption("Usually takes 1-3 minutes. This page updates itself - no need to reload.")
+    st.progress(50)
     if st.button("Cancel"):
         del st.session_state["job"]
         st.rerun()
@@ -203,7 +209,7 @@ def _poll_running_job() -> None:
 
 def _poll_and_display() -> None:
     """Called on every rerun while a job is in flight. Each call is a short,
-    independent script run — no single request/connection stays open for the
+    independent script run - no single request/connection stays open for the
     full analysis duration, unlike the previous blocking implementation."""
     job = st.session_state["job"]
 
@@ -212,7 +218,8 @@ def _poll_and_display() -> None:
         return
 
     if job.status == "error":
-        st.error(f"Analysis failed: {job.error}")
+        st.markdown(badge("Failed", "error"), unsafe_allow_html=True)
+        st.error(job.error)
         log_run(job.sops, status="Error", error=job.error)
         if st.button("Start over"):
             del st.session_state["job"]
@@ -224,27 +231,29 @@ def _poll_and_display() -> None:
     pdf_path = job.pdf_path
     log_run(job.sops, status="Complete", result=result, pdf_path=pdf_path)
 
-    st.success("Analysis complete!")
+    st.markdown(badge("Complete", "complete"), unsafe_allow_html=True)
 
     if job.order and not st.session_state.get(f"delivered_{job.order.id}"):
         _deliver_to_order(job, pdf_path, result)
 
     with open(pdf_path, "rb") as f:
         st.download_button(
-            label="Download Report PDF",
+            label="Download report PDF",
             data=f,
             file_name=os.path.basename(pdf_path),
             mime="application/pdf",
+            type="primary",
+            use_container_width=True,
         )
 
-    if st.button("Run another analysis"):
+    if st.button("Run another analysis", use_container_width=True):
         del st.session_state["job"]
         st.rerun()
 
     st.divider()
-    st.subheader("Executive Summary")
+    st.markdown("#### Executive summary")
     st.markdown(result.executive_summary)
 
     if result.cross_process:
-        st.subheader("Cross-Process Insights")
+        st.markdown("#### Cross-process insights")
         st.markdown(result.cross_process.insights)
