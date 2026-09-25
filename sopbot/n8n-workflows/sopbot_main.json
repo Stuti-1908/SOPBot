@@ -1,6 +1,6 @@
 [
   {
-    "updatedAt": "2026-09-24T06:29:20.844Z",
+    "updatedAt": "2026-09-25T12:46:00.322Z",
     "createdAt": "2026-07-01T19:22:39.535Z",
     "id": "fFboHgba81r265CZ",
     "name": "SOPBot Main (DRAFT - employee email feature)",
@@ -1605,6 +1605,72 @@
           2228,
           -8
         ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "id": "has-append-requests",
+                "leftValue": "={{ $json.requests.length }}",
+                "rightValue": 0,
+                "operator": {
+                  "type": "number",
+                  "operation": "gt"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "has-append-requests-matched",
+        "name": "17a1c. Has Extra Processes?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          2328,
+          -160
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "id": "has-append-requests",
+                "leftValue": "={{ $json.requests.length }}",
+                "rightValue": 0,
+                "operator": {
+                  "type": "number",
+                  "operation": "gt"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "has-append-requests-unmatched",
+        "name": "17b1c. Has Extra Processes? (Unmatched)",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          2328,
+          32
+        ]
       }
     ],
     "connections": {
@@ -2236,7 +2302,7 @@
         "main": [
           [
             {
-              "node": "17a2. Append Extra Processes",
+              "node": "17a1c. Has Extra Processes?",
               "type": "main",
               "index": 0
             }
@@ -2247,7 +2313,43 @@
         "main": [
           [
             {
+              "node": "17b1c. Has Extra Processes? (Unmatched)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "17a1c. Has Extra Processes?": {
+        "main": [
+          [
+            {
+              "node": "17a2. Append Extra Processes",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "18a. Patch SOP Doc URL",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "17b1c. Has Extra Processes? (Unmatched)": {
+        "main": [
+          [
+            {
               "node": "17b2. Append Extra Processes (Unmatched)",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "18b. Patch SOP Doc URL (Unmatched)",
               "type": "main",
               "index": 0
             }
@@ -2266,9 +2368,9 @@
     },
     "nodeGroups": [],
     "pinData": {},
-    "versionId": "e4006d58-9d23-4660-8aff-6d2987c2c602",
-    "activeVersionId": "e4006d58-9d23-4660-8aff-6d2987c2c602",
-    "versionCounter": 120,
+    "versionId": "472049ad-403b-4026-80ec-dc74d38f8ece",
+    "activeVersionId": "472049ad-403b-4026-80ec-dc74d38f8ece",
+    "versionCounter": 121,
     "triggerCount": 1,
     "sourceWorkflowId": null,
     "shared": [
@@ -2293,9 +2395,9 @@
     ],
     "tags": [],
     "activeVersion": {
-      "updatedAt": "2026-09-24T06:29:20.849Z",
-      "createdAt": "2026-09-24T06:29:20.849Z",
-      "versionId": "e4006d58-9d23-4660-8aff-6d2987c2c602",
+      "updatedAt": "2026-09-25T12:46:00.330Z",
+      "createdAt": "2026-09-25T12:46:00.330Z",
+      "versionId": "472049ad-403b-4026-80ec-dc74d38f8ece",
       "workflowId": "fFboHgba81r265CZ",
       "nodes": [
         {
@@ -3895,6 +3997,72 @@
             2228,
             -8
           ]
+        },
+        {
+          "parameters": {
+            "conditions": {
+              "options": {
+                "caseSensitive": true,
+                "leftValue": "",
+                "typeValidation": "strict",
+                "version": 1
+              },
+              "conditions": [
+                {
+                  "id": "has-append-requests",
+                  "leftValue": "={{ $json.requests.length }}",
+                  "rightValue": 0,
+                  "operator": {
+                    "type": "number",
+                    "operation": "gt"
+                  }
+                }
+              ],
+              "combinator": "and"
+            },
+            "options": {}
+          },
+          "id": "has-append-requests-matched",
+          "name": "17a1c. Has Extra Processes?",
+          "type": "n8n-nodes-base.if",
+          "typeVersion": 2.2,
+          "position": [
+            2328,
+            -160
+          ]
+        },
+        {
+          "parameters": {
+            "conditions": {
+              "options": {
+                "caseSensitive": true,
+                "leftValue": "",
+                "typeValidation": "strict",
+                "version": 1
+              },
+              "conditions": [
+                {
+                  "id": "has-append-requests",
+                  "leftValue": "={{ $json.requests.length }}",
+                  "rightValue": 0,
+                  "operator": {
+                    "type": "number",
+                    "operation": "gt"
+                  }
+                }
+              ],
+              "combinator": "and"
+            },
+            "options": {}
+          },
+          "id": "has-append-requests-unmatched",
+          "name": "17b1c. Has Extra Processes? (Unmatched)",
+          "type": "n8n-nodes-base.if",
+          "typeVersion": 2.2,
+          "position": [
+            2328,
+            32
+          ]
         }
       ],
       "connections": {
@@ -4526,7 +4694,7 @@
           "main": [
             [
               {
-                "node": "17a2. Append Extra Processes",
+                "node": "17a1c. Has Extra Processes?",
                 "type": "main",
                 "index": 0
               }
@@ -4537,7 +4705,43 @@
           "main": [
             [
               {
+                "node": "17b1c. Has Extra Processes? (Unmatched)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "17a1c. Has Extra Processes?": {
+          "main": [
+            [
+              {
+                "node": "17a2. Append Extra Processes",
+                "type": "main",
+                "index": 0
+              }
+            ],
+            [
+              {
+                "node": "18a. Patch SOP Doc URL",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "17b1c. Has Extra Processes? (Unmatched)": {
+          "main": [
+            [
+              {
                 "node": "17b2. Append Extra Processes (Unmatched)",
+                "type": "main",
+                "index": 0
+              }
+            ],
+            [
+              {
+                "node": "18b. Patch SOP Doc URL (Unmatched)",
                 "type": "main",
                 "index": 0
               }
@@ -4552,18 +4756,18 @@
       "autosaved": false,
       "workflowPublishHistory": [
         {
-          "createdAt": "2026-09-24T06:29:21.058Z",
-          "id": 218,
+          "createdAt": "2026-09-25T12:46:00.910Z",
+          "id": 243,
           "workflowId": "fFboHgba81r265CZ",
-          "versionId": "e4006d58-9d23-4660-8aff-6d2987c2c602",
+          "versionId": "472049ad-403b-4026-80ec-dc74d38f8ece",
           "event": "deactivated",
           "userId": "659411d0-00f4-4312-ba4e-31648993ba9d"
         },
         {
-          "createdAt": "2026-09-24T06:29:21.308Z",
-          "id": 219,
+          "createdAt": "2026-09-25T12:46:00.994Z",
+          "id": 244,
           "workflowId": "fFboHgba81r265CZ",
-          "versionId": "e4006d58-9d23-4660-8aff-6d2987c2c602",
+          "versionId": "472049ad-403b-4026-80ec-dc74d38f8ece",
           "event": "activated",
           "userId": "659411d0-00f4-4312-ba4e-31648993ba9d"
         }
