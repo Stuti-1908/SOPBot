@@ -316,6 +316,19 @@
   .demo-result-link:hover {
     border-bottom-color: var(--accent);
   }
+  .demo-result-link-standalone {
+    display: inline-block;
+    margin-top: -24px;
+    margin-bottom: 24px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid var(--accent);
+  }
+  @media (max-width: 900px) {
+    .demo-result-link-standalone { margin-top: 0; }
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .transcript .line, .demo-result { animation: none; opacity: 1; }
