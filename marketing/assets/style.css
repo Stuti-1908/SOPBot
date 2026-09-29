@@ -94,15 +94,18 @@
     height: 68px;
   }
   .brand {
-    font-family: 'Fraunces', serif;
-    font-weight: 600;
-    font-size: 1.25rem;
-    letter-spacing: -0.01em;
-    display: flex;
-    align-items: baseline;
-    gap: 2px;
+    display: inline-flex;
+    align-items: center;
   }
-  .brand .dot { color: var(--accent); }
+  .brand-logo {
+    display: block;
+    height: 28px;
+    width: auto;
+    padding: 7px 12px;
+    border-radius: 8px;
+    background: #181A19;
+  }
+  footer .brand-logo { height: 24px; padding: 6px 10px; border-radius: 7px; }
   .nav-links {
     display: flex;
     gap: 32px;
