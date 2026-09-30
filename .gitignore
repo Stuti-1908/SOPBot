@@ -22,3 +22,5 @@ Thumbs.db
 .qodo/
 .claude/
 .playwright-mcp/
+
+.vercel
