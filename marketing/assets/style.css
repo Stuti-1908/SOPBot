@@ -99,13 +99,13 @@
   }
   .brand-logo {
     display: block;
-    height: 28px;
+    height: 38px;
     width: auto;
     padding: 7px 12px;
     border-radius: 8px;
     background: #181A19;
   }
-  footer .brand-logo { height: 24px; padding: 6px 10px; border-radius: 7px; }
+  footer .brand-logo { height: 32px; padding: 6px 10px; border-radius: 7px; }
   .nav-links {
     display: flex;
     gap: 32px;
