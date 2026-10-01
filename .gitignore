@@ -3,6 +3,8 @@ secrets/
 infra/.env
 **/.env
 !**/.env.example
+claudelasesession.md
+claude*session*.md
 
 # Generated output
 workflowiq/output/
